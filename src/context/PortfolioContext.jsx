@@ -238,9 +238,16 @@ export function PortfolioProvider({ children }) {
             setProjects(fbProjects);
             localStorage.setItem('undo_projects_inr_v6', JSON.stringify(fbProjects));
           } else {
-            defaultProjects.forEach((proj, idx) => {
-              setDoc(doc(db, 'projects', proj.id), { ...proj, orderIndex: idx }, { merge: true }).catch(() => {});
-            });
+            const hasSeeded = localStorage.getItem('undo_seeded_projects_v2');
+            if (!hasSeeded) {
+              localStorage.setItem('undo_seeded_projects_v2', 'true');
+              defaultProjects.forEach((proj, idx) => {
+                setDoc(doc(db, 'projects', proj.id), { ...proj, orderIndex: idx }, { merge: true }).catch(() => {});
+              });
+            } else {
+              setProjects([]);
+              localStorage.setItem('undo_projects_inr_v6', JSON.stringify([]));
+            }
           }
           setFirebaseStatus('CONNECTED');
           setFirebaseError(null);
@@ -272,9 +279,16 @@ export function PortfolioProvider({ children }) {
             setServices(fbServices);
             localStorage.setItem('undo_services_inr_v6', JSON.stringify(fbServices));
           } else {
-            defaultServices.forEach((svc) => {
-              setDoc(doc(db, 'services', svc.id), svc, { merge: true }).catch(() => {});
-            });
+            const hasSeeded = localStorage.getItem('undo_seeded_services_v2');
+            if (!hasSeeded) {
+              localStorage.setItem('undo_seeded_services_v2', 'true');
+              defaultServices.forEach((svc) => {
+                setDoc(doc(db, 'services', svc.id), svc, { merge: true }).catch(() => {});
+              });
+            } else {
+              setServices([]);
+              localStorage.setItem('undo_services_inr_v6', JSON.stringify([]));
+            }
           }
         },
         (err) => handleFirestoreError(err, 'services')
@@ -288,9 +302,16 @@ export function PortfolioProvider({ children }) {
             setEstimatorServices(fbEstSvc);
             localStorage.setItem('undo_est_svc_inr_v6', JSON.stringify(fbEstSvc));
           } else {
-            defaultEstimatorServices.forEach((svc) => {
-              setDoc(doc(db, 'estimatorServices', svc.id), svc, { merge: true }).catch(() => {});
-            });
+            const hasSeeded = localStorage.getItem('undo_seeded_est_svc_v2');
+            if (!hasSeeded) {
+              localStorage.setItem('undo_seeded_est_svc_v2', 'true');
+              defaultEstimatorServices.forEach((svc) => {
+                setDoc(doc(db, 'estimatorServices', svc.id), svc, { merge: true }).catch(() => {});
+              });
+            } else {
+              setEstimatorServices([]);
+              localStorage.setItem('undo_est_svc_inr_v6', JSON.stringify([]));
+            }
           }
         },
         (err) => handleFirestoreError(err, 'estimatorServices')
@@ -304,9 +325,16 @@ export function PortfolioProvider({ children }) {
             setEstimatorScopes(fbEstScp);
             localStorage.setItem('undo_est_scp_inr_v6', JSON.stringify(fbEstScp));
           } else {
-            defaultEstimatorScopes.forEach((scp) => {
-              setDoc(doc(db, 'estimatorScopes', scp.id), scp, { merge: true }).catch(() => {});
-            });
+            const hasSeeded = localStorage.getItem('undo_seeded_est_scp_v2');
+            if (!hasSeeded) {
+              localStorage.setItem('undo_seeded_est_scp_v2', 'true');
+              defaultEstimatorScopes.forEach((scp) => {
+                setDoc(doc(db, 'estimatorScopes', scp.id), scp, { merge: true }).catch(() => {});
+              });
+            } else {
+              setEstimatorScopes([]);
+              localStorage.setItem('undo_est_scp_inr_v6', JSON.stringify([]));
+            }
           }
         },
         (err) => handleFirestoreError(err, 'estimatorScopes')
@@ -320,9 +348,16 @@ export function PortfolioProvider({ children }) {
             setEstimatorAddons(fbEstAdn);
             localStorage.setItem('undo_est_adn_inr_v6', JSON.stringify(fbEstAdn));
           } else {
-            defaultEstimatorAddons.forEach((adn) => {
-              setDoc(doc(db, 'estimatorAddons', adn.id), adn, { merge: true }).catch(() => {});
-            });
+            const hasSeeded = localStorage.getItem('undo_seeded_est_adn_v2');
+            if (!hasSeeded) {
+              localStorage.setItem('undo_seeded_est_adn_v2', 'true');
+              defaultEstimatorAddons.forEach((adn) => {
+                setDoc(doc(db, 'estimatorAddons', adn.id), adn, { merge: true }).catch(() => {});
+              });
+            } else {
+              setEstimatorAddons([]);
+              localStorage.setItem('undo_est_adn_inr_v6', JSON.stringify([]));
+            }
           }
         },
         (err) => handleFirestoreError(err, 'estimatorAddons')

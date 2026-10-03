@@ -541,8 +541,14 @@ service cloud.firestore {
                         </button>
 
                         <button
-                          onClick={() => {
-                            if (confirm(`Delete service type "${svc.name}"?`)) deleteEstimatorService(svc.id);
+                          onClick={async () => {
+                            if (confirm(`Delete service type "${svc.name}"?`)) {
+                              const ok = await deleteEstimatorService(svc.id);
+                              if (ok !== false) {
+                                setSaveSuccessMsg(`Service type "${svc.name}" removed successfully!`);
+                                setTimeout(() => setSaveSuccessMsg(''), 4000);
+                              }
+                            }
                           }}
                           className="btn-secondary"
                           style={{ padding: '0.35rem 0.65rem', fontSize: '0.75rem', color: '#f87171', borderColor: 'rgba(239,68,68,0.4)' }}
@@ -630,8 +636,14 @@ service cloud.firestore {
                       </div>
 
                       <button
-                        onClick={() => {
-                          if (confirm(`Delete scope "${scp.name}"?`)) deleteEstimatorScope(scp.id);
+                        onClick={async () => {
+                          if (confirm(`Delete scope "${scp.name}"?`)) {
+                            const ok = await deleteEstimatorScope(scp.id);
+                            if (ok !== false) {
+                              setSaveSuccessMsg(`Scope "${scp.name}" removed successfully!`);
+                              setTimeout(() => setSaveSuccessMsg(''), 4000);
+                            }
+                          }
                         }}
                         className="btn-secondary"
                         style={{ padding: '0.35rem 0.65rem', fontSize: '0.75rem', color: '#f87171', borderColor: 'rgba(239,68,68,0.4)' }}
@@ -717,8 +729,14 @@ service cloud.firestore {
                       </div>
 
                       <button
-                        onClick={() => {
-                          if (confirm(`Delete add-on "${adn.name}"?`)) deleteEstimatorAddon(adn.id);
+                        onClick={async () => {
+                          if (confirm(`Delete add-on "${adn.name}"?`)) {
+                            const ok = await deleteEstimatorAddon(adn.id);
+                            if (ok !== false) {
+                              setSaveSuccessMsg(`Add-on "${adn.name}" removed successfully!`);
+                              setTimeout(() => setSaveSuccessMsg(''), 4000);
+                            }
+                          }
                         }}
                         className="btn-secondary"
                         style={{ padding: '0.35rem 0.65rem', fontSize: '0.75rem', color: '#f87171', borderColor: 'rgba(239,68,68,0.4)' }}
@@ -1013,8 +1031,14 @@ service cloud.firestore {
                     </button>
 
                     <button
-                      onClick={() => {
-                        if (confirm(`Delete project "${proj.title}"?`)) deleteProject(proj.id);
+                      onClick={async () => {
+                        if (confirm(`Delete project "${proj.title}"?`)) {
+                          const ok = await deleteProject(proj.id);
+                          if (ok !== false) {
+                            setSaveSuccessMsg(`Project "${proj.title}" removed successfully!`);
+                            setTimeout(() => setSaveSuccessMsg(''), 4000);
+                          }
+                        }
                       }}
                       className="btn-secondary"
                       style={{ padding: '0.4rem 0.75rem', fontSize: '0.75rem', borderColor: 'rgba(239, 68, 68, 0.4)', color: '#f87171' }}
@@ -1093,7 +1117,19 @@ service cloud.firestore {
                   <p style={{ fontWeight: 700, color: '#ffffff', fontSize: '0.9rem' }}>{svc.title}</p>
                   <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{svc.desc}</p>
                 </div>
-                <button onClick={() => deleteService(svc.id)} className="btn-secondary" style={{ color: '#f87171', padding: '0.4rem 0.75rem', fontSize: '0.75rem' }}>
+                <button
+                  onClick={async () => {
+                    if (confirm(`Delete service "${svc.title}"?`)) {
+                      const ok = await deleteService(svc.id);
+                      if (ok !== false) {
+                        setSaveSuccessMsg(`Service "${svc.title}" removed successfully!`);
+                        setTimeout(() => setSaveSuccessMsg(''), 4000);
+                      }
+                    }
+                  }}
+                  className="btn-secondary"
+                  style={{ color: '#f87171', padding: '0.4rem 0.75rem', fontSize: '0.75rem' }}
+                >
                   <Trash2 size={14} />
                   <span>Remove</span>
                 </button>
@@ -1113,7 +1149,16 @@ service cloud.firestore {
                     <p style={{ fontWeight: 700, color: '#c084fc', fontSize: '0.85rem' }}>{m.name} ({m.email})</p>
                     <p style={{ fontSize: '0.85rem', color: '#ffffff' }}>{m.message}</p>
                   </div>
-                  <button onClick={() => deleteMessage(m.id)} style={{ background: 'transparent', border: 'none', color: '#f87171', cursor: 'pointer' }}>
+                  <button
+                    onClick={async () => {
+                      const ok = await deleteMessage(m.id);
+                      if (ok !== false) {
+                        setSaveSuccessMsg('Inquiry message deleted!');
+                        setTimeout(() => setSaveSuccessMsg(''), 4000);
+                      }
+                    }}
+                    style={{ background: 'transparent', border: 'none', color: '#f87171', cursor: 'pointer' }}
+                  >
                     <Trash2 size={16} />
                   </button>
                 </div>
@@ -1135,7 +1180,16 @@ service cloud.firestore {
                       ) | {r.service} ({r.scope})
                     </p>
                   </div>
-                  <button onClick={() => deleteCustomRequest(r.id)} style={{ background: 'transparent', border: 'none', color: '#f87171', cursor: 'pointer' }}>
+                  <button
+                    onClick={async () => {
+                      const ok = await deleteCustomRequest(r.id);
+                      if (ok !== false) {
+                        setSaveSuccessMsg('Proposal request deleted!');
+                        setTimeout(() => setSaveSuccessMsg(''), 4000);
+                      }
+                    }}
+                    style={{ background: 'transparent', border: 'none', color: '#f87171', cursor: 'pointer' }}
+                  >
                     <Trash2 size={16} />
                   </button>
                 </div>
