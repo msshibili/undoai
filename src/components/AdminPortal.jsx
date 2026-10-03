@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { usePortfolio } from '../context/PortfolioContext';
+import { usePortfolio, getDaysAndHours, formatProductionTime } from '../context/PortfolioContext';
 import { Lock, ArrowLeft, Plus, Trash2, Edit3, Save, Check, Database, Layers, Code2, Mail, Zap, Upload, ArrowUp, ArrowDown, X, Calculator } from 'lucide-react';
 
 const categoriesList = [
@@ -87,6 +87,8 @@ export default function AdminPortal({ onClose }) {
     deleteMessage,
     customRequests,
     deleteCustomRequest,
+    firebaseStatus,
+    firebaseError,
   } = usePortfolio();
 
   const [tempSettings, setTempSettings] = useState({ ...settings });
@@ -105,10 +107,11 @@ export default function AdminPortal({ onClose }) {
 
   const [editingProject, setEditingProject] = useState(null);
 
-  // New Estimator Item States (in INR ₹)
-  const [newEstSvc, setNewEstSvc] = useState({ name: '', basePrice: 2499, baseWeeks: 1 });
-  const [newEstScp, setNewEstScp] = useState({ name: '', multiplier: 1.5, extraWeeks: 1 });
-  const [newEstAdn, setNewEstAdn] = useState({ name: '', price: 1500, weeks: 0.5 });
+  // New Estimator Item States (in Days & Hours)
+  const [newEstSvc, setNewEstSvc] = useState({ name: '', basePrice: 2499, baseDays: 3, baseHours: 0 });
+  const [newEstScp, setNewEstScp] = useState({ name: '', multiplier: 1.5, extraDays: 1, extraHours: 0 });
+  const [newEstAdn, setNewEstAdn] = useState({ name: '', price: 1500, days: 1, hours: 12 });
+
 
   const [imagePreview, setImagePreview] = useState(null);
   const [editImagePreview, setEditImagePreview] = useState(null);
@@ -173,71 +176,98 @@ export default function AdminPortal({ onClose }) {
     }
   };
 
-  const handleSaveSettings = (e) => {
+  const handleSaveSettings = async (e) => {
     e.preventDefault();
-    updateSiteSettings(tempSettings);
-    setSaveSuccessMsg('Website content settings saved and synced successfully!');
-    setTimeout(() => setSaveSuccessMsg(''), 4000);
+    const ok = await updateSiteSettings(tempSettings);
+    if (ok) {
+      setSaveSuccessMsg('Website content settings saved and synced successfully to Firebase!');
+      setTimeout(() => setSaveSuccessMsg(''), 4000);
+    }
   };
 
-  const handleCreateProject = (e) => {
+  const handleCreateProject = async (e) => {
     e.preventDefault();
     if (!newProject.title) return;
-    addProject({
+    const ok = await addProject({
       ...newProject,
       thumbnail: newProject.thumbnail || '/project-cyber.png',
       mainImage: newProject.mainImage || newProject.thumbnail || '/project-cyber.png',
     });
-    setNewProject({
-      title: '',
-      category: 'Social Media',
-      tag: 'social',
-      thumbnail: '/project-cyber.png',
-      mainImage: '/project-cyber.png',
-      description: '',
-      client: '',
-      date: '2026',
-    });
-    setImagePreview(null);
-    setSaveSuccessMsg('New Project published to website instantly!');
-    setTimeout(() => setSaveSuccessMsg(''), 4000);
+    if (ok) {
+      setNewProject({
+        title: '',
+        category: 'Social Media',
+        tag: 'social',
+        thumbnail: '/project-cyber.png',
+        mainImage: '/project-cyber.png',
+        description: '',
+        client: '',
+        date: '2026',
+      });
+      setImagePreview(null);
+      setSaveSuccessMsg('New Project published and saved to Firebase!');
+      setTimeout(() => setSaveSuccessMsg(''), 4000);
+    }
   };
 
-  const handleSaveEditedProject = (e) => {
+  const handleSaveEditedProject = async (e) => {
     e.preventDefault();
     if (!editingProject) return;
-    updateProject(editingProject.id, editingProject);
-    setEditingProject(null);
-    setSaveSuccessMsg('Project updated successfully!');
-    setTimeout(() => setSaveSuccessMsg(''), 4000);
+    const ok = await updateProject(editingProject.id, editingProject);
+    if (ok) {
+      setEditingProject(null);
+      setSaveSuccessMsg('Project updated successfully in Firebase!');
+      setTimeout(() => setSaveSuccessMsg(''), 4000);
+    }
   };
 
   // Estimator Handlers
-  const handleAddEstSvc = (e) => {
+  const handleAddEstSvc = async (e) => {
     e.preventDefault();
     if (!newEstSvc.name) return;
-    addEstimatorService({ ...newEstSvc, basePrice: Number(newEstSvc.basePrice), baseWeeks: Number(newEstSvc.baseWeeks) });
-    setNewEstSvc({ name: '', basePrice: 2499, baseWeeks: 1 });
-    setSaveSuccessMsg('Estimator Service Type added live!');
-    setTimeout(() => setSaveSuccessMsg(''), 4000);
+    const ok = await addEstimatorService({
+      ...newEstSvc,
+      basePrice: Number(newEstSvc.basePrice),
+      baseDays: Number(newEstSvc.baseDays),
+      baseHours: Number(newEstSvc.baseHours),
+    });
+    if (ok) {
+      setNewEstSvc({ name: '', basePrice: 2499, baseDays: 3, baseHours: 0 });
+      setSaveSuccessMsg('Estimator Service Type added live to Firebase!');
+      setTimeout(() => setSaveSuccessMsg(''), 4000);
+    }
   };
 
-  const handleAddEstScp = (e) => {
+  const handleAddEstScp = async (e) => {
     e.preventDefault();
     if (!newEstScp.name) return;
-    addEstimatorScope({ ...newEstScp, multiplier: Number(newEstScp.multiplier), extraWeeks: Number(newEstScp.extraWeeks) });
-    setNewEstScp({ name: '', multiplier: 1.5, extraWeeks: 1 });
-    setSaveSuccessMsg('Estimator Scope option added live!');
-    setTimeout(() => setSaveSuccessMsg(''), 4000);
+    const ok = await addEstimatorScope({
+      ...newEstScp,
+      multiplier: Number(newEstScp.multiplier),
+      extraDays: Number(newEstScp.extraDays),
+      extraHours: Number(newEstScp.extraHours),
+    });
+    if (ok) {
+      setNewEstScp({ name: '', multiplier: 1.5, extraDays: 1, extraHours: 0 });
+      setSaveSuccessMsg('Estimator Scope option added live to Firebase!');
+      setTimeout(() => setSaveSuccessMsg(''), 4000);
+    }
   };
 
-  const handleAddEstAdn = (e) => {
+  const handleAddEstAdn = async (e) => {
     e.preventDefault();
     if (!newEstAdn.name) return;
-    addEstimatorAddon({ ...newEstAdn, price: Number(newEstAdn.price), weeks: Number(newEstAdn.weeks) });
-    setNewEstAdn({ name: '', price: 1500, weeks: 0.5 });
-    setSaveSuccessMsg('Estimator Add-on added live!');
-    setTimeout(() => setSaveSuccessMsg(''), 4000);
+    const ok = await addEstimatorAddon({
+      ...newEstAdn,
+      price: Number(newEstAdn.price),
+      days: Number(newEstAdn.days),
+      hours: Number(newEstAdn.hours),
+    });
+    if (ok) {
+      setNewEstAdn({ name: '', price: 1500, days: 1, hours: 12 });
+      setSaveSuccessMsg('Estimator Add-on added live to Firebase!');
+      setTimeout(() => setSaveSuccessMsg(''), 4000);
+    }
   };
 
   if (!authenticated) {
@@ -285,7 +315,48 @@ export default function AdminPortal({ onClose }) {
         {/* Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: '1rem', borderBottom: '1px solid var(--border-light)', marginBottom: '1.5rem' }}>
           <div>
-            <h2 style={{ fontSize: '1.6rem', fontWeight: 800, color: '#ffffff' }}>Studio Management Console</h2>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <h2 style={{ fontSize: '1.6rem', fontWeight: 800, color: '#ffffff' }}>Studio Management Console</h2>
+              <span
+                style={{
+                  fontSize: '0.7rem',
+                  fontWeight: 700,
+                  padding: '0.25rem 0.6rem',
+                  borderRadius: '20px',
+                  background:
+                    firebaseStatus === 'CONNECTED'
+                      ? 'rgba(16, 185, 129, 0.2)'
+                      : firebaseStatus === 'PERMISSION_DENIED'
+                      ? 'rgba(239, 68, 68, 0.2)'
+                      : 'rgba(245, 158, 11, 0.2)',
+                  color:
+                    firebaseStatus === 'CONNECTED'
+                      ? '#10b981'
+                      : firebaseStatus === 'PERMISSION_DENIED'
+                      ? '#f87171'
+                      : '#fbbf24',
+                  border: `1px solid ${
+                    firebaseStatus === 'CONNECTED'
+                      ? 'rgba(16, 185, 129, 0.4)'
+                      : firebaseStatus === 'PERMISSION_DENIED'
+                      ? 'rgba(239, 68, 68, 0.4)'
+                      : 'rgba(245, 158, 11, 0.4)'
+                  }`,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.35rem',
+                }}
+              >
+                <Database size={12} />
+                <span>
+                  {firebaseStatus === 'CONNECTED'
+                    ? 'Firebase Sync Active'
+                    : firebaseStatus === 'PERMISSION_DENIED'
+                    ? 'Firebase Security Rules Blocked'
+                    : 'Firebase Offline / Local Cache'}
+                </span>
+              </span>
+            </div>
             <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Full control over Estimator pricing (₹ INR), project order, services & site content</p>
           </div>
           <button onClick={onClose} className="btn-secondary" style={{ padding: '0.4rem 0.85rem', fontSize: '0.75rem' }}>
@@ -293,12 +364,35 @@ export default function AdminPortal({ onClose }) {
           </button>
         </div>
 
+        {firebaseStatus === 'PERMISSION_DENIED' && (
+          <div style={{ padding: '1rem', borderRadius: '12px', background: 'rgba(239, 68, 68, 0.15)', border: '1px solid rgba(239, 68, 68, 0.4)', color: '#fca5a5', fontSize: '0.8rem', marginBottom: '1.5rem' }}>
+            <p style={{ fontWeight: 700, marginBottom: '0.3rem', fontSize: '0.85rem' }}>⚠️ Firebase Firestore Security Rules Warning</p>
+            <p style={{ marginBottom: '0.5rem' }}>
+              Your Firebase Firestore project (<strong>undo-ai-6fde6</strong>) is blocking read/write permissions.
+            </p>
+            <p style={{ fontSize: '0.75rem', color: '#cbd5e1' }}>
+              <strong>Solution:</strong> Open your <a href="https://console.firebase.google.com" target="_blank" rel="noreferrer" style={{ color: '#38bdf8', textDecoration: 'underline' }}>Firebase Console</a> &rarr; Firestore Database &rarr; Rules tab, and set:
+            </p>
+            <pre style={{ background: '#090b10', padding: '0.5rem', borderRadius: '8px', fontSize: '0.75rem', color: '#a7f3d0', marginTop: '0.4rem', overflowX: 'auto' }}>
+{`rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if true;
+    }
+  }
+}`}
+            </pre>
+          </div>
+        )}
+
         {saveSuccessMsg && (
           <div style={{ padding: '0.75rem 1rem', borderRadius: '12px', background: 'rgba(16, 185, 129, 0.2)', border: '1px solid rgba(16, 185, 129, 0.4)', color: '#6ee7b7', fontSize: '0.85rem', fontWeight: 600, marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <Check size={16} />
             <span>{saveSuccessMsg}</span>
           </div>
         )}
+
 
         {/* Console Tabs */}
         <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '1.5rem', borderBottom: '1px solid var(--border-light)', paddingBottom: '1rem' }}>
@@ -358,9 +452,8 @@ export default function AdminPortal({ onClose }) {
                 <Calculator size={18} />
                 <span>1. Service Types & Base Pricing (₹ INR)</span>
               </h3>
-
-              {/* Add New Service Type Form */}
-              <form onSubmit={handleAddEstSvc} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '1.5rem', paddingBottom: '1.5rem', borderBottom: '1px solid var(--border-light)' }}>
+                       {/* Add New Service Type Form */}
+              <form onSubmit={handleAddEstSvc} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '1rem', marginBottom: '1.5rem', paddingBottom: '1.5rem', borderBottom: '1px solid var(--border-light)' }}>
                 <div>
                   <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Service Name</label>
                   <input
@@ -383,12 +476,22 @@ export default function AdminPortal({ onClose }) {
                   />
                 </div>
                 <div>
-                  <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Base Production Weeks</label>
+                  <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Base Production Days</label>
                   <input
                     type="number"
                     required
-                    value={newEstSvc.baseWeeks}
-                    onChange={(e) => setNewEstSvc({ ...newEstSvc, baseWeeks: e.target.value })}
+                    value={newEstSvc.baseDays}
+                    onChange={(e) => setNewEstSvc({ ...newEstSvc, baseDays: e.target.value })}
+                    className="form-input"
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Base Production Hours</label>
+                  <input
+                    type="number"
+                    required
+                    value={newEstSvc.baseHours}
+                    onChange={(e) => setNewEstSvc({ ...newEstSvc, baseHours: e.target.value })}
                     className="form-input"
                   />
                 </div>
@@ -402,43 +505,55 @@ export default function AdminPortal({ onClose }) {
 
               {/* List Service Types */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                {estimatorServices.map((svc) => (
-                  <div key={svc.id} style={{ padding: '1rem', background: 'rgba(7, 8, 13, 0.6)', borderRadius: '12px', border: '1px solid var(--border-light)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
-                    <div>
-                      <span style={{ fontWeight: 700, color: '#ffffff', fontSize: '0.9rem' }}>{svc.name}</span>
-                      <span style={{ fontSize: '0.8rem', color: '#06b6d4', marginLeft: '1rem' }}>Base Price: ₹{svc.basePrice.toLocaleString()}</span>
-                      <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginLeft: '1rem' }}>Timeline: {svc.baseWeeks} wks</span>
-                    </div>
+                {estimatorServices.map((svc) => {
+                  const dh = getDaysAndHours(svc);
+                  return (
+                    <div key={svc.id} style={{ padding: '1rem', background: 'rgba(7, 8, 13, 0.6)', borderRadius: '12px', border: '1px solid var(--border-light)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+                      <div>
+                        <span style={{ fontWeight: 700, color: '#ffffff', fontSize: '0.9rem' }}>{svc.name}</span>
+                        <span style={{ fontSize: '0.8rem', color: '#06b6d4', marginLeft: '1rem' }}>Base Price: ₹{svc.basePrice.toLocaleString()}</span>
+                        <span style={{ fontSize: '0.8rem', color: '#c084fc', marginLeft: '1rem' }}>
+                          Timeline: {formatProductionTime(dh.days, dh.hours)}
+                        </span>
+                      </div>
 
-                    <div style={{ display: 'flex', gap: '0.5rem' }}>
-                      <button
-                        onClick={() => {
-                          const newName = prompt('Edit Service Type Name:', svc.name);
-                          const newPrice = prompt('Edit Base Price (₹ INR):', svc.basePrice);
-                          if (newName && newPrice) {
-                            updateEstimatorService(svc.id, { name: newName, basePrice: Number(newPrice) });
-                          }
-                        }}
-                        className="btn-secondary"
-                        style={{ padding: '0.35rem 0.65rem', fontSize: '0.75rem' }}
-                      >
-                        <Edit3 size={14} />
-                        <span>Edit</span>
-                      </button>
+                      <div style={{ display: 'flex', gap: '0.5rem' }}>
+                        <button
+                          onClick={() => {
+                            const newName = prompt('Edit Service Type Name:', svc.name);
+                            const newPrice = prompt('Edit Base Price (₹ INR):', svc.basePrice);
+                            const newDays = prompt('Edit Base Production Days:', dh.days);
+                            const newHours = prompt('Edit Base Production Hours:', dh.hours);
+                            if (newName && newPrice) {
+                              updateEstimatorService(svc.id, {
+                                name: newName,
+                                basePrice: Number(newPrice),
+                                baseDays: Number(newDays ?? dh.days),
+                                baseHours: Number(newHours ?? dh.hours),
+                              });
+                            }
+                          }}
+                          className="btn-secondary"
+                          style={{ padding: '0.35rem 0.65rem', fontSize: '0.75rem' }}
+                        >
+                          <Edit3 size={14} />
+                          <span>Edit</span>
+                        </button>
 
-                      <button
-                        onClick={() => {
-                          if (confirm(`Delete service type "${svc.name}"?`)) deleteEstimatorService(svc.id);
-                        }}
-                        className="btn-secondary"
-                        style={{ padding: '0.35rem 0.65rem', fontSize: '0.75rem', color: '#f87171', borderColor: 'rgba(239,68,68,0.4)' }}
-                      >
-                        <Trash2 size={14} />
-                        <span>Remove</span>
-                      </button>
+                        <button
+                          onClick={() => {
+                            if (confirm(`Delete service type "${svc.name}"?`)) deleteEstimatorService(svc.id);
+                          }}
+                          className="btn-secondary"
+                          style={{ padding: '0.35rem 0.65rem', fontSize: '0.75rem', color: '#f87171', borderColor: 'rgba(239,68,68,0.4)' }}
+                        >
+                          <Trash2 size={14} />
+                          <span>Remove</span>
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
 
             </div>
@@ -447,10 +562,10 @@ export default function AdminPortal({ onClose }) {
             <div style={{ padding: '1.5rem', background: 'var(--bg-card)', borderRadius: '16px', border: '1px solid var(--border-light)' }}>
               <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#06b6d4', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <Calculator size={18} />
-                <span>2. Project Scope Multipliers</span>
+                <span>2. Project Scope Multipliers & Extra Production Time</span>
               </h3>
 
-              <form onSubmit={handleAddEstScp} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '1.5rem', paddingBottom: '1.5rem', borderBottom: '1px solid var(--border-light)' }}>
+              <form onSubmit={handleAddEstScp} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '1rem', marginBottom: '1.5rem', paddingBottom: '1.5rem', borderBottom: '1px solid var(--border-light)' }}>
                 <div>
                   <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Scope Name</label>
                   <input
@@ -474,12 +589,22 @@ export default function AdminPortal({ onClose }) {
                   />
                 </div>
                 <div>
-                  <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Extra Weeks</label>
+                  <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Extra Days</label>
                   <input
                     type="number"
                     required
-                    value={newEstScp.extraWeeks}
-                    onChange={(e) => setNewEstScp({ ...newEstScp, extraWeeks: e.target.value })}
+                    value={newEstScp.extraDays}
+                    onChange={(e) => setNewEstScp({ ...newEstScp, extraDays: e.target.value })}
+                    className="form-input"
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Extra Hours</label>
+                  <input
+                    type="number"
+                    required
+                    value={newEstScp.extraHours}
+                    onChange={(e) => setNewEstScp({ ...newEstScp, extraHours: e.target.value })}
                     className="form-input"
                   />
                 </div>
@@ -492,26 +617,31 @@ export default function AdminPortal({ onClose }) {
               </form>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                {estimatorScopes.map((scp) => (
-                  <div key={scp.id} style={{ padding: '1rem', background: 'rgba(7, 8, 13, 0.6)', borderRadius: '12px', border: '1px solid var(--border-light)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
-                    <div>
-                      <span style={{ fontWeight: 700, color: '#ffffff', fontSize: '0.9rem' }}>{scp.name}</span>
-                      <span style={{ fontSize: '0.8rem', color: '#c084fc', marginLeft: '1rem' }}>Scale x{scp.multiplier}</span>
-                      <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginLeft: '1rem' }}>+{scp.extraWeeks} wks</span>
-                    </div>
+                {estimatorScopes.map((scp) => {
+                  const dh = getDaysAndHours(scp);
+                  return (
+                    <div key={scp.id} style={{ padding: '1rem', background: 'rgba(7, 8, 13, 0.6)', borderRadius: '12px', border: '1px solid var(--border-light)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+                      <div>
+                        <span style={{ fontWeight: 700, color: '#ffffff', fontSize: '0.9rem' }}>{scp.name}</span>
+                        <span style={{ fontSize: '0.8rem', color: '#c084fc', marginLeft: '1rem' }}>Scale x{scp.multiplier}</span>
+                        <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginLeft: '1rem' }}>
+                          Extra Time: +{dh.days}d {dh.hours}h
+                        </span>
+                      </div>
 
-                    <button
-                      onClick={() => {
-                        if (confirm(`Delete scope "${scp.name}"?`)) deleteEstimatorScope(scp.id);
-                      }}
-                      className="btn-secondary"
-                      style={{ padding: '0.35rem 0.65rem', fontSize: '0.75rem', color: '#f87171', borderColor: 'rgba(239,68,68,0.4)' }}
-                    >
-                      <Trash2 size={14} />
-                      <span>Remove</span>
-                    </button>
-                  </div>
-                ))}
+                      <button
+                        onClick={() => {
+                          if (confirm(`Delete scope "${scp.name}"?`)) deleteEstimatorScope(scp.id);
+                        }}
+                        className="btn-secondary"
+                        style={{ padding: '0.35rem 0.65rem', fontSize: '0.75rem', color: '#f87171', borderColor: 'rgba(239,68,68,0.4)' }}
+                      >
+                        <Trash2 size={14} />
+                        <span>Remove</span>
+                      </button>
+                    </div>
+                  );
+                })}
               </div>
 
             </div>
@@ -523,7 +653,7 @@ export default function AdminPortal({ onClose }) {
                 <span>3. Add-ons & Extra Features (₹ INR)</span>
               </h3>
 
-              <form onSubmit={handleAddEstAdn} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '1.5rem', paddingBottom: '1.5rem', borderBottom: '1px solid var(--border-light)' }}>
+              <form onSubmit={handleAddEstAdn} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '1rem', marginBottom: '1.5rem', paddingBottom: '1.5rem', borderBottom: '1px solid var(--border-light)' }}>
                 <div>
                   <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Add-on Feature Name</label>
                   <input
@@ -546,13 +676,22 @@ export default function AdminPortal({ onClose }) {
                   />
                 </div>
                 <div>
-                  <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Extra Weeks (e.g. 0.5 or -1 for rush)</label>
+                  <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Extra Days</label>
                   <input
                     type="number"
-                    step="0.5"
                     required
-                    value={newEstAdn.weeks}
-                    onChange={(e) => setNewEstAdn({ ...newEstAdn, weeks: e.target.value })}
+                    value={newEstAdn.days}
+                    onChange={(e) => setNewEstAdn({ ...newEstAdn, days: e.target.value })}
+                    className="form-input"
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Extra Hours</label>
+                  <input
+                    type="number"
+                    required
+                    value={newEstAdn.hours}
+                    onChange={(e) => setNewEstAdn({ ...newEstAdn, hours: e.target.value })}
                     className="form-input"
                   />
                 </div>
@@ -565,26 +704,31 @@ export default function AdminPortal({ onClose }) {
               </form>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                {estimatorAddons.map((adn) => (
-                  <div key={adn.id} style={{ padding: '1rem', background: 'rgba(7, 8, 13, 0.6)', borderRadius: '12px', border: '1px solid var(--border-light)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
-                    <div>
-                      <span style={{ fontWeight: 700, color: '#ffffff', fontSize: '0.9rem' }}>{adn.name}</span>
-                      <span style={{ fontSize: '0.8rem', color: '#ec4899', marginLeft: '1rem' }}>+₹{adn.price.toLocaleString()}</span>
-                      <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginLeft: '1rem' }}>+{adn.weeks} wks</span>
-                    </div>
+                {estimatorAddons.map((adn) => {
+                  const dh = getDaysAndHours(adn);
+                  return (
+                    <div key={adn.id} style={{ padding: '1rem', background: 'rgba(7, 8, 13, 0.6)', borderRadius: '12px', border: '1px solid var(--border-light)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+                      <div>
+                        <span style={{ fontWeight: 700, color: '#ffffff', fontSize: '0.9rem' }}>{adn.name}</span>
+                        <span style={{ fontSize: '0.8rem', color: '#ec4899', marginLeft: '1rem' }}>+₹{adn.price.toLocaleString()}</span>
+                        <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginLeft: '1rem' }}>
+                          Extra Time: +{dh.days}d {dh.hours}h
+                        </span>
+                      </div>
 
-                    <button
-                      onClick={() => {
-                        if (confirm(`Delete add-on "${adn.name}"?`)) deleteEstimatorAddon(adn.id);
-                      }}
-                      className="btn-secondary"
-                      style={{ padding: '0.35rem 0.65rem', fontSize: '0.75rem', color: '#f87171', borderColor: 'rgba(239,68,68,0.4)' }}
-                    >
-                      <Trash2 size={14} />
-                      <span>Remove</span>
-                    </button>
-                  </div>
-                ))}
+                      <button
+                        onClick={() => {
+                          if (confirm(`Delete add-on "${adn.name}"?`)) deleteEstimatorAddon(adn.id);
+                        }}
+                        className="btn-secondary"
+                        style={{ padding: '0.35rem 0.65rem', fontSize: '0.75rem', color: '#f87171', borderColor: 'rgba(239,68,68,0.4)' }}
+                      >
+                        <Trash2 size={14} />
+                        <span>Remove</span>
+                      </button>
+                    </div>
+                  );
+                })}
               </div>
 
             </div>
@@ -982,7 +1126,14 @@ export default function AdminPortal({ onClose }) {
                 <div key={r.id} style={{ padding: '1rem', background: 'var(--bg-card)', borderRadius: '12px', marginBottom: '0.5rem', border: '1px solid var(--border-light)', display: 'flex', justifyContent: 'space-between' }}>
                   <div>
                     <p style={{ fontWeight: 700, color: 'var(--accent-cyan)', fontSize: '0.85rem' }}>{r.email}</p>
-                    <p style={{ fontSize: '0.85rem', color: '#ffffff', fontWeight: 600 }}>Est: ₹{r.estimatedPrice ? r.estimatedPrice.toLocaleString() : '0'} ({r.estimatedWeeks} wks) | {r.service} ({r.scope})</p>
+                    <p style={{ fontSize: '0.85rem', color: '#ffffff', fontWeight: 600 }}>
+                      Est: ₹{r.estimatedPrice ? r.estimatedPrice.toLocaleString() : '0'} (
+                      {r.estimatedTimeText ||
+                        (r.estimatedDays !== undefined
+                          ? formatProductionTime(r.estimatedDays, r.estimatedHours)
+                          : `${r.estimatedWeeks || 1} wks`)}
+                      ) | {r.service} ({r.scope})
+                    </p>
                   </div>
                   <button onClick={() => deleteCustomRequest(r.id)} style={{ background: 'transparent', border: 'none', color: '#f87171', cursor: 'pointer' }}>
                     <Trash2 size={16} />

@@ -11,6 +11,8 @@ import {
   onSnapshot 
 } from 'firebase/firestore';
 
+import { getAuth, signInAnonymously } from 'firebase/auth';
+
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyBhQXrjHktWKTQ9Oz3FT_kdSr7FS2JiZOw",
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "undo-ai-6fde6.firebaseapp.com",
@@ -23,5 +25,12 @@ const firebaseConfig = {
 // Initialize Firebase App
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 export const db = getFirestore(app);
+export const auth = getAuth(app);
+
+// Optional auto anonymous auth attempt for Firestore permission compliance
+signInAnonymously(auth).catch((err) => {
+  console.log('Firebase Anonymous Auth Note:', err.message);
+});
 
 export { collection, getDocs, addDoc, doc, updateDoc, deleteDoc, setDoc, onSnapshot };
+

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { usePortfolio } from '../context/PortfolioContext';
+import { usePortfolio, getDaysAndHours, formatProductionTime } from '../context/PortfolioContext';
 import { Sparkles, Calculator, Clock, Send } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
@@ -32,8 +32,8 @@ export default function InteractiveConfigurator() {
     }
   };
 
-  const activeSvc = selectedService || estimatorServices[0] || { basePrice: 2499, baseWeeks: 1, name: 'Custom Design' };
-  const activeScp = selectedScope || estimatorScopes[0] || { multiplier: 1.0, extraWeeks: 0, name: 'Single Asset' };
+  const activeSvc = selectedService || estimatorServices[0] || { basePrice: 2499, baseDays: 3, baseHours: 0, name: 'Custom Design' };
+  const activeScp = selectedScope || estimatorScopes[0] || { multiplier: 1.0, extraDays: 0, extraHours: 0, name: 'Single Asset' };
 
   const addonCost = selectedAddons.reduce((sum, id) => {
     const item = estimatorAddons.find((a) => a.id === id);
@@ -42,12 +42,21 @@ export default function InteractiveConfigurator() {
 
   const totalEstimate = Math.round(activeSvc.basePrice * activeScp.multiplier + addonCost);
 
-  const addonWeeks = selectedAddons.reduce((sum, id) => {
-    const item = estimatorAddons.find((a) => a.id === id);
-    return sum + (item ? item.weeks : 0);
-  }, 0);
+  const svcDH = getDaysAndHours(activeSvc);
+  const scpDH = getDaysAndHours(activeScp);
 
-  const totalWeeks = Math.max(1, Math.round(activeSvc.baseWeeks + activeScp.extraWeeks + addonWeeks));
+  const addonDH = selectedAddons.reduce(
+    (acc, id) => {
+      const item = estimatorAddons.find((a) => a.id === id);
+      const dh = getDaysAndHours(item);
+      return { days: acc.days + dh.days, hours: acc.hours + dh.hours };
+    },
+    { days: 0, hours: 0 }
+  );
+
+  const totalDays = svcDH.days + scpDH.days + addonDH.days;
+  const totalHours = svcDH.hours + scpDH.hours + addonDH.hours;
+  const formattedTime = formatProductionTime(totalDays, totalHours);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -56,7 +65,9 @@ export default function InteractiveConfigurator() {
       scope: activeScp.name,
       addons: selectedAddons,
       estimatedPrice: totalEstimate,
-      estimatedWeeks: totalWeeks,
+      estimatedDays: totalDays,
+      estimatedHours: totalHours,
+      estimatedTimeText: formattedTime,
       email: clientEmail,
     });
 
@@ -80,7 +91,7 @@ export default function InteractiveConfigurator() {
           </span>
           <h2 className="section-title">Build Your Custom Project Order</h2>
           <p className="section-subtitle">
-            Configure your design requirements and get instant price and production estimates.
+            Configure your design requirements and get instant price and production estimates in Days & Hours.
           </p>
         </div>
 
@@ -96,16 +107,22 @@ export default function InteractiveConfigurator() {
                 1. SELECT SERVICE TYPE
               </h3>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.75rem' }}>
-                {estimatorServices.map((svc) => (
-                  <button
-                    key={svc.id}
-                    type="button"
-                    onClick={() => setSelectedService(svc)}
-                    className={`config-option-btn ${activeSvc.id === svc.id ? 'active' : ''}`}
-                  >
-                    <span style={{ fontWeight: 600, fontSize: '0.85rem' }}>{svc.name}</span>
-                  </button>
-                ))}
+                {estimatorServices.map((svc) => {
+                  const dh = getDaysAndHours(svc);
+                  return (
+                    <button
+                      key={svc.id}
+                      type="button"
+                      onClick={() => setSelectedService(svc)}
+                      className={`config-option-btn ${activeSvc.id === svc.id ? 'active' : ''}`}
+                    >
+                      <span style={{ fontWeight: 600, fontSize: '0.85rem' }}>{svc.name}</span>
+                      <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', display: 'block', marginTop: '2px' }}>
+                        Base Time: {formatProductionTime(dh.days, dh.hours)}
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
@@ -137,6 +154,7 @@ export default function InteractiveConfigurator() {
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.75rem' }}>
                 {estimatorAddons.map((addon) => {
                   const isChecked = selectedAddons.includes(addon.id);
+                  const dh = getDaysAndHours(addon);
                   return (
                     <button
                       key={addon.id}
@@ -148,6 +166,9 @@ export default function InteractiveConfigurator() {
                       <div>
                         <p style={{ fontWeight: 600, fontSize: '0.85rem' }}>{addon.name}</p>
                         <p style={{ fontSize: '0.75rem', color: '#c084fc' }}>+₹{addon.price.toLocaleString()}</p>
+                        <p style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>
+                          +{dh.days}d {dh.hours}h
+                        </p>
                       </div>
                       <span>{isChecked ? '✓' : ''}</span>
                     </button>
@@ -173,9 +194,10 @@ export default function InteractiveConfigurator() {
                 </p>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.5rem', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
                   <Clock size={16} color="#06b6d4" />
-                  <span>Timeline: <strong style={{ color: '#ffffff' }}>{totalWeeks} {totalWeeks === 1 ? 'Week' : 'Weeks'}</strong></span>
+                  <span>Timeline: <strong style={{ color: '#ffffff' }}>{formattedTime}</strong></span>
                 </div>
               </div>
+
 
               <form onSubmit={handleSubmit}>
                 <div style={{ marginBottom: '1rem' }}>

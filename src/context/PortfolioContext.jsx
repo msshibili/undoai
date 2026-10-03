@@ -54,27 +54,56 @@ const defaultServices = [
   },
 ];
 
+export function getDaysAndHours(item) {
+  if (!item) return { days: 0, hours: 0 };
+  let days = item.baseDays ?? item.extraDays ?? item.days;
+  let hours = item.baseHours ?? item.extraHours ?? item.hours;
+
+  if (days === undefined || days === null) {
+    const weeks = item.baseWeeks ?? item.extraWeeks ?? item.weeks ?? 0;
+    days = Math.floor(weeks * 7);
+    hours = Math.round((weeks * 7 - days) * 24);
+  }
+
+  return { days: Number(days) || 0, hours: Number(hours) || 0 };
+}
+
+export function formatProductionTime(totalDays = 0, totalHours = 0) {
+  let netHours = Math.round((totalDays * 24) + totalHours);
+  if (netHours <= 0) return '24 Hours (Same Day Rush)';
+
+  const d = Math.floor(netHours / 24);
+  const h = netHours % 24;
+
+  let parts = [];
+  if (d > 0) parts.push(`${d} ${d === 1 ? 'Day' : 'Days'}`);
+  if (h > 0) parts.push(`${h} ${h === 1 ? 'Hour' : 'Hours'}`);
+
+  return `${parts.join(' ')} (${netHours}h Total)`;
+}
+
 const defaultEstimatorServices = [
-  { id: 'est-svc-1', name: 'Social Media Design Suite', basePrice: 2499, baseWeeks: 1 },
-  { id: 'est-svc-2', name: 'Flyer & Event Poster Pack', basePrice: 1999, baseWeeks: 1 },
-  { id: 'est-svc-3', name: 'Logo & Brand Identity System', basePrice: 4999, baseWeeks: 2 },
-  { id: 'est-svc-4', name: 'Editorial Magazine Layout', basePrice: 5999, baseWeeks: 2 },
-  { id: 'est-svc-5', name: 'Cinematic Video Edit', basePrice: 7999, baseWeeks: 2 },
-  { id: 'est-svc-6', name: 'AI Video Creation & VFX', basePrice: 9999, baseWeeks: 2 },
+  { id: 'est-svc-1', name: 'Social Media Design Suite', basePrice: 2499, baseDays: 3, baseHours: 0 },
+  { id: 'est-svc-2', name: 'Flyer & Event Poster Pack', basePrice: 1999, baseDays: 2, baseHours: 12 },
+  { id: 'est-svc-3', name: 'Logo & Brand Identity System', basePrice: 4999, baseDays: 5, baseHours: 0 },
+  { id: 'est-svc-4', name: 'Editorial Magazine Layout', basePrice: 5999, baseDays: 6, baseHours: 0 },
+  { id: 'est-svc-5', name: 'Cinematic Video Edit', basePrice: 7999, baseDays: 7, baseHours: 12 },
+  { id: 'est-svc-6', name: 'AI Video Creation & VFX', basePrice: 9999, baseDays: 8, baseHours: 0 },
 ];
 
 const defaultEstimatorScopes = [
-  { id: 'est-scp-1', name: 'Single Design Asset', multiplier: 1.0, extraWeeks: 0 },
-  { id: 'est-scp-2', name: 'Multi-Asset Creative Suite', multiplier: 1.8, extraWeeks: 1 },
-  { id: 'est-scp-3', name: 'Full Campaign Brand Launch', multiplier: 2.8, extraWeeks: 2 },
+  { id: 'est-scp-1', name: 'Single Design Asset', multiplier: 1.0, extraDays: 0, extraHours: 0 },
+  { id: 'est-scp-2', name: 'Multi-Asset Creative Suite', multiplier: 1.8, extraDays: 2, extraHours: 12 },
+  { id: 'est-scp-3', name: 'Full Campaign Brand Launch', multiplier: 2.8, extraDays: 5, extraHours: 0 },
 ];
 
 const defaultEstimatorAddons = [
-  { id: 'est-adn-1', name: 'Animated Motion Graphics', price: 1500, weeks: 0.5 },
-  { id: 'est-adn-2', name: 'AI Virtual Avatar & Voiceover', price: 2500, weeks: 1 },
-  { id: 'est-adn-3', name: 'High-Res Print Production Files', price: 999, weeks: 0 },
-  { id: 'est-adn-4', name: '24h Expedited Fast Turnaround', price: 1999, weeks: -1 },
+  { id: 'est-adn-1', name: 'Animated Motion Graphics', price: 1500, days: 1, hours: 12 },
+  { id: 'est-adn-2', name: 'AI Virtual Avatar & Voiceover', price: 2500, days: 3, hours: 0 },
+  { id: 'est-adn-3', name: 'High-Res Print Production Files', price: 999, days: 0, hours: 6 },
+  { id: 'est-adn-4', name: '24h Expedited Fast Turnaround', price: 1999, days: -1, hours: -12 },
 ];
+
 
 const defaultProjects = [
   {
@@ -165,6 +194,7 @@ export function PortfolioProvider({ children }) {
   const [customRequests, setCustomRequests] = useState([]);
   const [activeModalProject, setActiveModalProject] = useState(null);
   const [firebaseStatus, setFirebaseStatus] = useState('CONNECTED');
+  const [firebaseError, setFirebaseError] = useState(null);
 
   useEffect(() => {
     // Load local storage initial caches
@@ -186,74 +216,173 @@ export function PortfolioProvider({ children }) {
     const savedEstAdn = localStorage.getItem('undo_est_adn_inr_v6');
     if (savedEstAdn) setEstimatorAddons(JSON.parse(savedEstAdn));
 
+    const handleFirestoreError = (err, contextName) => {
+      console.error(`Firestore [${contextName}] Error:`, err);
+      if (err.code === 'permission-denied') {
+        setFirebaseStatus('PERMISSION_DENIED');
+        setFirebaseError('Firestore Permission Denied. Check Firebase Security Rules in Firebase Console.');
+      } else {
+        setFirebaseStatus('OFFLINE_CACHE');
+        setFirebaseError(err.message || 'Firebase sync error');
+      }
+    };
+
     // Firebase real-time listeners
     try {
-      const unsubProjects = onSnapshot(collection(db, 'projects'), (snapshot) => {
-        if (!snapshot.empty) {
-          const fbProjects = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
-          // Maintain order if stored with order index
-          fbProjects.sort((a, b) => (a.orderIndex ?? 0) - (b.orderIndex ?? 0));
-          setProjects(fbProjects);
-          localStorage.setItem('undo_projects_inr_v6', JSON.stringify(fbProjects));
-        } else {
-          // Seed initial default projects to Firestore if empty
-          defaultProjects.forEach((proj, idx) => {
-            setDoc(doc(db, 'projects', proj.id), { ...proj, orderIndex: idx }, { merge: true }).catch(() => {});
-          });
-        }
-      }, (err) => setFirebaseStatus('OFFLINE_CACHE'));
+      const unsubProjects = onSnapshot(
+        collection(db, 'projects'),
+        (snapshot) => {
+          if (!snapshot.empty) {
+            const fbProjects = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+            fbProjects.sort((a, b) => (a.orderIndex ?? 0) - (b.orderIndex ?? 0));
+            setProjects(fbProjects);
+            localStorage.setItem('undo_projects_inr_v6', JSON.stringify(fbProjects));
+          } else {
+            defaultProjects.forEach((proj, idx) => {
+              setDoc(doc(db, 'projects', proj.id), { ...proj, orderIndex: idx }, { merge: true }).catch(() => {});
+            });
+          }
+          setFirebaseStatus('CONNECTED');
+          setFirebaseError(null);
+        },
+        (err) => handleFirestoreError(err, 'projects')
+      );
 
-      const unsubSettings = onSnapshot(doc(db, 'settings', 'hero'), (docSnap) => {
-        if (docSnap.exists()) {
-          const fbSettings = docSnap.data();
-          setSettings(fbSettings);
-          localStorage.setItem('undo_settings_inr_v6', JSON.stringify(fbSettings));
-        } else {
-          setDoc(doc(db, 'settings', 'hero'), defaultHeroSettings, { merge: true }).catch(() => {});
-        }
-      }, () => {});
+      const unsubSettings = onSnapshot(
+        doc(db, 'settings', 'hero'),
+        (docSnap) => {
+          if (docSnap.exists()) {
+            const fbSettings = docSnap.data();
+            setSettings(fbSettings);
+            localStorage.setItem('undo_settings_inr_v6', JSON.stringify(fbSettings));
+          } else {
+            setDoc(doc(db, 'settings', 'hero'), defaultHeroSettings, { merge: true }).catch(() => {});
+          }
+          setFirebaseStatus('CONNECTED');
+          setFirebaseError(null);
+        },
+        (err) => handleFirestoreError(err, 'settings')
+      );
 
-      const unsubServices = onSnapshot(collection(db, 'services'), (snapshot) => {
-        if (!snapshot.empty) {
-          const fbServices = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
-          setServices(fbServices);
-          localStorage.setItem('undo_services_inr_v6', JSON.stringify(fbServices));
-        } else {
-          defaultServices.forEach((svc) => {
-            setDoc(doc(db, 'services', svc.id), svc, { merge: true }).catch(() => {});
-          });
-        }
-      }, () => {});
+      const unsubServices = onSnapshot(
+        collection(db, 'services'),
+        (snapshot) => {
+          if (!snapshot.empty) {
+            const fbServices = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+            setServices(fbServices);
+            localStorage.setItem('undo_services_inr_v6', JSON.stringify(fbServices));
+          } else {
+            defaultServices.forEach((svc) => {
+              setDoc(doc(db, 'services', svc.id), svc, { merge: true }).catch(() => {});
+            });
+          }
+        },
+        (err) => handleFirestoreError(err, 'services')
+      );
 
-      const unsubMessages = onSnapshot(collection(db, 'messages'), (snapshot) => {
-        const fbMsgs = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
-        setMessages(fbMsgs);
-      }, () => {});
+      const unsubEstServices = onSnapshot(
+        collection(db, 'estimatorServices'),
+        (snapshot) => {
+          if (!snapshot.empty) {
+            const fbEstSvc = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+            setEstimatorServices(fbEstSvc);
+            localStorage.setItem('undo_est_svc_inr_v6', JSON.stringify(fbEstSvc));
+          } else {
+            defaultEstimatorServices.forEach((svc) => {
+              setDoc(doc(db, 'estimatorServices', svc.id), svc, { merge: true }).catch(() => {});
+            });
+          }
+        },
+        (err) => handleFirestoreError(err, 'estimatorServices')
+      );
 
-      const unsubProposals = onSnapshot(collection(db, 'proposals'), (snapshot) => {
-        const fbProps = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
-        setCustomRequests(fbProps);
-      }, () => {});
+      const unsubEstScopes = onSnapshot(
+        collection(db, 'estimatorScopes'),
+        (snapshot) => {
+          if (!snapshot.empty) {
+            const fbEstScp = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+            setEstimatorScopes(fbEstScp);
+            localStorage.setItem('undo_est_scp_inr_v6', JSON.stringify(fbEstScp));
+          } else {
+            defaultEstimatorScopes.forEach((scp) => {
+              setDoc(doc(db, 'estimatorScopes', scp.id), scp, { merge: true }).catch(() => {});
+            });
+          }
+        },
+        (err) => handleFirestoreError(err, 'estimatorScopes')
+      );
+
+      const unsubEstAddons = onSnapshot(
+        collection(db, 'estimatorAddons'),
+        (snapshot) => {
+          if (!snapshot.empty) {
+            const fbEstAdn = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+            setEstimatorAddons(fbEstAdn);
+            localStorage.setItem('undo_est_adn_inr_v6', JSON.stringify(fbEstAdn));
+          } else {
+            defaultEstimatorAddons.forEach((adn) => {
+              setDoc(doc(db, 'estimatorAddons', adn.id), adn, { merge: true }).catch(() => {});
+            });
+          }
+        },
+        (err) => handleFirestoreError(err, 'estimatorAddons')
+      );
+
+      const unsubMessages = onSnapshot(
+        collection(db, 'messages'),
+        (snapshot) => {
+          const fbMsgs = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+          setMessages(fbMsgs);
+        },
+        (err) => handleFirestoreError(err, 'messages')
+      );
+
+      const unsubProposals = onSnapshot(
+        collection(db, 'proposals'),
+        (snapshot) => {
+          const fbProps = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+          setCustomRequests(fbProps);
+        },
+        (err) => handleFirestoreError(err, 'proposals')
+      );
 
       return () => {
         if (typeof unsubProjects === 'function') unsubProjects();
         if (typeof unsubSettings === 'function') unsubSettings();
         if (typeof unsubServices === 'function') unsubServices();
+        if (typeof unsubEstServices === 'function') unsubEstServices();
+        if (typeof unsubEstScopes === 'function') unsubEstScopes();
+        if (typeof unsubEstAddons === 'function') unsubEstAddons();
         if (typeof unsubMessages === 'function') unsubMessages();
         if (typeof unsubProposals === 'function') unsubProposals();
       };
     } catch (err) {
-      setFirebaseStatus('OFFLINE_CACHE');
+      handleFirestoreError(err, 'init');
     }
   }, []);
+
+  const handleOpError = (e, opName) => {
+    console.error(`Firebase [${opName}] failed:`, e);
+    const msg = e?.message || String(e);
+    if (e?.code === 'permission-denied') {
+      setFirebaseStatus('PERMISSION_DENIED');
+      setFirebaseError('Permission Denied: Your Firestore rules block writes.');
+      alert(`Firebase Permission Denied!\n\nYour Firestore database rules block unauthenticated writes.\n\nPlease update Security Rules in Firebase Console to allow writes.`);
+    } else {
+      setFirebaseError(msg);
+      alert(`Firebase Save Error (${opName}): ${msg}`);
+    }
+    return false;
+  };
 
   const updateSiteSettings = async (newSettings) => {
     setSettings(newSettings);
     localStorage.setItem('undo_settings_inr_v6', JSON.stringify(newSettings));
     try {
       await setDoc(doc(db, 'settings', 'hero'), newSettings, { merge: true });
+      return true;
     } catch (e) {
-      console.warn("Firestore settings update failed:", e);
+      return handleOpError(e, 'updateSiteSettings');
     }
   };
 
@@ -264,7 +393,7 @@ export function PortfolioProvider({ children }) {
         await setDoc(doc(db, 'projects', pList[i].id), { ...pList[i], orderIndex: i }, { merge: true });
       }
     } catch (e) {
-      console.warn("Firestore reorder save failed:", e);
+      console.error("Firestore reorder save failed:", e);
     }
   };
 
@@ -277,8 +406,9 @@ export function PortfolioProvider({ children }) {
 
     try {
       await setDoc(doc(db, 'projects', id), newProj, { merge: true });
+      return true;
     } catch (e) {
-      console.warn("Firestore addProject failed:", e);
+      return handleOpError(e, 'addProject');
     }
   };
 
@@ -289,8 +419,9 @@ export function PortfolioProvider({ children }) {
 
     try {
       await setDoc(doc(db, 'projects', id), updatedFields, { merge: true });
+      return true;
     } catch (e) {
-      console.warn("Firestore updateProject failed:", e);
+      return handleOpError(e, 'updateProject');
     }
   };
 
@@ -301,8 +432,9 @@ export function PortfolioProvider({ children }) {
 
     try {
       await deleteDoc(doc(db, 'projects', id));
+      return true;
     } catch (e) {
-      console.warn("Firestore deleteProject failed:", e);
+      return handleOpError(e, 'deleteProject');
     }
   };
 
@@ -336,7 +468,10 @@ export function PortfolioProvider({ children }) {
     localStorage.setItem('undo_est_svc_inr_v6', JSON.stringify(updated));
     try {
       await setDoc(doc(db, 'estimatorServices', newItem.id), newItem, { merge: true });
-    } catch (e) {}
+      return true;
+    } catch (e) {
+      return handleOpError(e, 'addEstimatorService');
+    }
   };
 
   const updateEstimatorService = async (id, fields) => {
@@ -345,7 +480,10 @@ export function PortfolioProvider({ children }) {
     localStorage.setItem('undo_est_svc_inr_v6', JSON.stringify(updated));
     try {
       await setDoc(doc(db, 'estimatorServices', id), fields, { merge: true });
-    } catch (e) {}
+      return true;
+    } catch (e) {
+      return handleOpError(e, 'updateEstimatorService');
+    }
   };
 
   const deleteEstimatorService = async (id) => {
@@ -354,7 +492,10 @@ export function PortfolioProvider({ children }) {
     localStorage.setItem('undo_est_svc_inr_v6', JSON.stringify(updated));
     try {
       await deleteDoc(doc(db, 'estimatorServices', id));
-    } catch (e) {}
+      return true;
+    } catch (e) {
+      return handleOpError(e, 'deleteEstimatorService');
+    }
   };
 
   // ESTIMATOR SCOPES CRUD
@@ -365,7 +506,10 @@ export function PortfolioProvider({ children }) {
     localStorage.setItem('undo_est_scp_inr_v6', JSON.stringify(updated));
     try {
       await setDoc(doc(db, 'estimatorScopes', newItem.id), newItem, { merge: true });
-    } catch (e) {}
+      return true;
+    } catch (e) {
+      return handleOpError(e, 'addEstimatorScope');
+    }
   };
 
   const updateEstimatorScope = async (id, fields) => {
@@ -374,7 +518,10 @@ export function PortfolioProvider({ children }) {
     localStorage.setItem('undo_est_scp_inr_v6', JSON.stringify(updated));
     try {
       await setDoc(doc(db, 'estimatorScopes', id), fields, { merge: true });
-    } catch (e) {}
+      return true;
+    } catch (e) {
+      return handleOpError(e, 'updateEstimatorScope');
+    }
   };
 
   const deleteEstimatorScope = async (id) => {
@@ -383,7 +530,10 @@ export function PortfolioProvider({ children }) {
     localStorage.setItem('undo_est_scp_inr_v6', JSON.stringify(updated));
     try {
       await deleteDoc(doc(db, 'estimatorScopes', id));
-    } catch (e) {}
+      return true;
+    } catch (e) {
+      return handleOpError(e, 'deleteEstimatorScope');
+    }
   };
 
   // ESTIMATOR ADDONS CRUD
@@ -394,7 +544,10 @@ export function PortfolioProvider({ children }) {
     localStorage.setItem('undo_est_adn_inr_v6', JSON.stringify(updated));
     try {
       await setDoc(doc(db, 'estimatorAddons', newItem.id), newItem, { merge: true });
-    } catch (e) {}
+      return true;
+    } catch (e) {
+      return handleOpError(e, 'addEstimatorAddon');
+    }
   };
 
   const updateEstimatorAddon = async (id, fields) => {
@@ -403,7 +556,10 @@ export function PortfolioProvider({ children }) {
     localStorage.setItem('undo_est_adn_inr_v6', JSON.stringify(updated));
     try {
       await setDoc(doc(db, 'estimatorAddons', id), fields, { merge: true });
-    } catch (e) {}
+      return true;
+    } catch (e) {
+      return handleOpError(e, 'updateEstimatorAddon');
+    }
   };
 
   const deleteEstimatorAddon = async (id) => {
@@ -412,7 +568,10 @@ export function PortfolioProvider({ children }) {
     localStorage.setItem('undo_est_adn_inr_v6', JSON.stringify(updated));
     try {
       await deleteDoc(doc(db, 'estimatorAddons', id));
-    } catch (e) {}
+      return true;
+    } catch (e) {
+      return handleOpError(e, 'deleteEstimatorAddon');
+    }
   };
 
   // Services CRUD
@@ -423,7 +582,10 @@ export function PortfolioProvider({ children }) {
     localStorage.setItem('undo_services_inr_v6', JSON.stringify(updated));
     try {
       await setDoc(doc(db, 'services', newSvc.id), newSvc, { merge: true });
-    } catch (e) {}
+      return true;
+    } catch (e) {
+      return handleOpError(e, 'addService');
+    }
   };
 
   const updateService = async (id, updatedFields) => {
@@ -432,7 +594,10 @@ export function PortfolioProvider({ children }) {
     localStorage.setItem('undo_services_inr_v6', JSON.stringify(updated));
     try {
       await setDoc(doc(db, 'services', id), updatedFields, { merge: true });
-    } catch (e) {}
+      return true;
+    } catch (e) {
+      return handleOpError(e, 'updateService');
+    }
   };
 
   const deleteService = async (id) => {
@@ -441,7 +606,10 @@ export function PortfolioProvider({ children }) {
     localStorage.setItem('undo_services_inr_v6', JSON.stringify(updated));
     try {
       await deleteDoc(doc(db, 'services', id));
-    } catch (e) {}
+      return true;
+    } catch (e) {
+      return handleOpError(e, 'deleteService');
+    }
   };
 
   // Messages & Proposals
@@ -452,14 +620,20 @@ export function PortfolioProvider({ children }) {
 
     try {
       await setDoc(doc(db, 'messages', id), newMsg);
-    } catch (e) {}
+      return true;
+    } catch (e) {
+      return handleOpError(e, 'addMessage');
+    }
   };
 
   const deleteMessage = async (id) => {
     setMessages((prev) => prev.filter((m) => m.id !== id));
     try {
       await deleteDoc(doc(db, 'messages', id));
-    } catch (e) {}
+      return true;
+    } catch (e) {
+      return handleOpError(e, 'deleteMessage');
+    }
   };
 
   const addCustomRequest = async (req) => {
@@ -469,14 +643,20 @@ export function PortfolioProvider({ children }) {
 
     try {
       await setDoc(doc(db, 'proposals', id), newReq);
-    } catch (e) {}
+      return true;
+    } catch (e) {
+      return handleOpError(e, 'addCustomRequest');
+    }
   };
 
   const deleteCustomRequest = async (id) => {
     setCustomRequests((prev) => prev.filter((r) => r.id !== id));
     try {
       await deleteDoc(doc(db, 'proposals', id));
-    } catch (e) {}
+      return true;
+    } catch (e) {
+      return handleOpError(e, 'deleteCustomRequest');
+    }
   };
 
   return (
@@ -515,11 +695,13 @@ export function PortfolioProvider({ children }) {
         activeModalProject,
         setActiveModalProject,
         firebaseStatus,
+        firebaseError,
       }}
     >
       {children}
     </PortfolioContext.Provider>
   );
+
 }
 
 export function usePortfolio() {
