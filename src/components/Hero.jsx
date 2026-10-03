@@ -43,16 +43,16 @@ export default function Hero() {
             {/* Stats */}
             <div className="hero-stats">
               <div>
-                <p className="stat-number" style={{ color: '#ffffff' }}>{settings.statsProjects}</p>
-                <p className="stat-label">Completed Works</p>
+                <p className="stat-number" style={{ color: '#ffffff' }}>{settings.statsProjects || '100+'}</p>
+                <p className="stat-label">{settings.statsProjectsLabel || 'Completed Works'}</p>
               </div>
               <div>
-                <p className="stat-number" style={{ color: '#06b6d4' }}>{settings.statsSatisfaction}</p>
-                <p className="stat-label">Client Satisfaction</p>
+                <p className="stat-number" style={{ color: '#06b6d4' }}>{settings.statsSatisfaction || '99.9%'}</p>
+                <p className="stat-label">{settings.statsSatisfactionLabel || 'Client Satisfaction'}</p>
               </div>
               <div>
-                <p className="stat-number" style={{ color: '#8b5cf6' }}>{settings.statsExperience}</p>
-                <p className="stat-label">Industry Experience</p>
+                <p className="stat-number" style={{ color: '#8b5cf6' }}>{settings.statsExperience || '3+ Years'}</p>
+                <p className="stat-label">{settings.statsExperienceLabel || 'Years Experience'}</p>
               </div>
             </div>
 

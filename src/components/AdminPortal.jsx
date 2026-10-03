@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { usePortfolio, getDaysAndHours, formatProductionTime } from '../context/PortfolioContext';
 import { processAndUploadImage } from '../firebase/config';
 import { Lock, ArrowLeft, Plus, Trash2, Edit3, Save, Check, Database, Layers, Code2, Mail, Zap, Upload, ArrowUp, ArrowDown, X, Calculator, Loader2 } from 'lucide-react';
@@ -93,6 +93,12 @@ export default function AdminPortal({ onClose }) {
   } = usePortfolio();
 
   const [tempSettings, setTempSettings] = useState({ ...settings });
+
+  useEffect(() => {
+    if (settings) {
+      setTempSettings({ ...settings });
+    }
+  }, [settings]);
 
   // New Project State
   const [newProject, setNewProject] = useState({
@@ -1070,48 +1076,143 @@ service cloud.firestore {
 
         {/* TAB 3: HERO SETTINGS */}
         {activeTab === 'settings' && (
-          <form onSubmit={handleSaveSettings} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.25rem' }}>
-            <div>
-              <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)' }}>Top Hero Badge</label>
-              <input
-                type="text"
-                value={tempSettings.badge}
-                onChange={(e) => setTempSettings({ ...tempSettings, badge: e.target.value })}
-                className="form-input"
-              />
+          <form onSubmit={handleSaveSettings} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+            
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.25rem' }}>
+              <div>
+                <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)' }}>Top Hero Badge</label>
+                <input
+                  type="text"
+                  value={tempSettings.badge || ''}
+                  onChange={(e) => setTempSettings({ ...tempSettings, badge: e.target.value })}
+                  className="form-input"
+                />
+              </div>
+
+              <div>
+                <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)' }}>Title Line 1</label>
+                <input
+                  type="text"
+                  value={tempSettings.titleLine1 || ''}
+                  onChange={(e) => setTempSettings({ ...tempSettings, titleLine1: e.target.value })}
+                  className="form-input"
+                />
+              </div>
+
+              <div>
+                <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)' }}>Title Line 2 (Gradient)</label>
+                <input
+                  type="text"
+                  value={tempSettings.titleLine2 || ''}
+                  onChange={(e) => setTempSettings({ ...tempSettings, titleLine2: e.target.value })}
+                  className="form-input"
+                />
+              </div>
             </div>
 
             <div>
-              <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)' }}>Title Line 1</label>
-              <input
-                type="text"
-                value={tempSettings.titleLine1}
-                onChange={(e) => setTempSettings({ ...tempSettings, titleLine1: e.target.value })}
-                className="form-input"
-              />
-            </div>
-
-            <div>
-              <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)' }}>Title Line 2 (Gradient)</label>
-              <input
-                type="text"
-                value={tempSettings.titleLine2}
-                onChange={(e) => setTempSettings({ ...tempSettings, titleLine2: e.target.value })}
-                className="form-input"
-              />
-            </div>
-
-            <div style={{ gridColumn: '1 / -1' }}>
               <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)' }}>Hero Description</label>
               <textarea
                 rows={3}
-                value={tempSettings.description}
+                value={tempSettings.description || ''}
                 onChange={(e) => setTempSettings({ ...tempSettings, description: e.target.value })}
                 className="form-textarea"
               />
             </div>
 
-            <div style={{ gridColumn: '1 / -1' }}>
+            {/* HERO STATISTICS SECTION */}
+            <div style={{ padding: '1.25rem', background: 'rgba(7, 8, 13, 0.6)', borderRadius: '16px', border: '1px solid var(--border-light)' }}>
+              <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#c084fc', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <Zap size={16} />
+                <span>Hero Banner Statistics & Access Controls</span>
+              </h4>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1.25rem' }}>
+                {/* Stat 1 */}
+                <div style={{ padding: '1rem', background: 'var(--bg-card)', borderRadius: '12px', border: '1px solid var(--border-light)' }}>
+                  <p style={{ fontSize: '0.8rem', fontWeight: 700, color: '#ffffff', marginBottom: '0.75rem' }}>Statistic #1 (Projects)</p>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                    <div>
+                      <label style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Value / Number</label>
+                      <input
+                        type="text"
+                        value={tempSettings.statsProjects || ''}
+                        onChange={(e) => setTempSettings({ ...tempSettings, statsProjects: e.target.value })}
+                        placeholder="100+"
+                        className="form-input"
+                      />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Label Text</label>
+                      <input
+                        type="text"
+                        value={tempSettings.statsProjectsLabel || ''}
+                        onChange={(e) => setTempSettings({ ...tempSettings, statsProjectsLabel: e.target.value })}
+                        placeholder="Completed Works"
+                        className="form-input"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Stat 2 */}
+                <div style={{ padding: '1rem', background: 'var(--bg-card)', borderRadius: '12px', border: '1px solid var(--border-light)' }}>
+                  <p style={{ fontSize: '0.8rem', fontWeight: 700, color: '#06b6d4', marginBottom: '0.75rem' }}>Statistic #2 (Satisfaction)</p>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                    <div>
+                      <label style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Value / Number</label>
+                      <input
+                        type="text"
+                        value={tempSettings.statsSatisfaction || ''}
+                        onChange={(e) => setTempSettings({ ...tempSettings, statsSatisfaction: e.target.value })}
+                        placeholder="99.9%"
+                        className="form-input"
+                      />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Label Text</label>
+                      <input
+                        type="text"
+                        value={tempSettings.statsSatisfactionLabel || ''}
+                        onChange={(e) => setTempSettings({ ...tempSettings, statsSatisfactionLabel: e.target.value })}
+                        placeholder="Client Satisfaction"
+                        className="form-input"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Stat 3 */}
+                <div style={{ padding: '1rem', background: 'var(--bg-card)', borderRadius: '12px', border: '1px solid var(--border-light)' }}>
+                  <p style={{ fontSize: '0.8rem', fontWeight: 700, color: '#8b5cf6', marginBottom: '0.75rem' }}>Statistic #3 (Experience)</p>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                    <div>
+                      <label style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Value / Number</label>
+                      <input
+                        type="text"
+                        value={tempSettings.statsExperience || ''}
+                        onChange={(e) => setTempSettings({ ...tempSettings, statsExperience: e.target.value })}
+                        placeholder="3+ Years"
+                        className="form-input"
+                      />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Label Text</label>
+                      <input
+                        type="text"
+                        value={tempSettings.statsExperienceLabel || ''}
+                        onChange={(e) => setTempSettings({ ...tempSettings, statsExperienceLabel: e.target.value })}
+                        placeholder="Years Experience"
+                        className="form-input"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+            <div>
               <button type="submit" className="btn-primary" style={{ width: '100%', justifyContent: 'center' }}>
                 <Save size={16} />
                 <span>Save All Site Settings</span>

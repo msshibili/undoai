@@ -8,9 +8,12 @@ const defaultHeroSettings = {
   description: 'Your ultimate creative corner for Social Media Designs, Flyer & Poster Art, Logo & Branding Systems, Magazine Layouts, Video Editing, and AI Video Creation.',
   ctaPrimary: 'Explore Portfolio',
   ctaSecondary: 'Estimate Creative Scope',
-  statsProjects: '350+',
+  statsProjects: '100+',
+  statsProjectsLabel: 'Completed Works',
   statsSatisfaction: '99.9%',
-  statsExperience: '8+ Yrs',
+  statsSatisfactionLabel: 'Client Satisfaction',
+  statsExperience: '3+ Years',
+  statsExperienceLabel: 'Years Experience',
   contactEmail: 'undoaicreatives@gmail.com',
   location: 'Virtual',
   socialBehance: 'https://www.behance.net',
@@ -203,7 +206,15 @@ export function PortfolioProvider({ children }) {
   useEffect(() => {
     // Load local storage initial caches
     const savedSettings = localStorage.getItem('undo_settings_inr_v6');
-    if (savedSettings) setSettings(JSON.parse(savedSettings));
+    if (savedSettings) {
+      const parsed = JSON.parse(savedSettings);
+      if (parsed.statsProjects === '350+') parsed.statsProjects = '100+';
+      if (parsed.statsExperience === '8+ Yrs') parsed.statsExperience = '3+ Years';
+      if (!parsed.statsProjectsLabel) parsed.statsProjectsLabel = 'Completed Works';
+      if (!parsed.statsSatisfactionLabel) parsed.statsSatisfactionLabel = 'Client Satisfaction';
+      if (!parsed.statsExperienceLabel) parsed.statsExperienceLabel = 'Years Experience';
+      setSettings(parsed);
+    }
 
     const savedProjects = localStorage.getItem('undo_projects_inr_v6');
     if (savedProjects) setProjects(JSON.parse(savedProjects));
@@ -272,6 +283,30 @@ export function PortfolioProvider({ children }) {
             }
             if (fbSettings.location?.includes('San Francisco') || !fbSettings.location) {
               fbSettings.location = 'Virtual';
+              needsUpdate = true;
+            }
+            if (fbSettings.statsProjects === '350+' || !fbSettings.statsProjects) {
+              fbSettings.statsProjects = '100+';
+              needsUpdate = true;
+            }
+            if (!fbSettings.statsProjectsLabel) {
+              fbSettings.statsProjectsLabel = 'Completed Works';
+              needsUpdate = true;
+            }
+            if (!fbSettings.statsSatisfaction) {
+              fbSettings.statsSatisfaction = '99.9%';
+              needsUpdate = true;
+            }
+            if (!fbSettings.statsSatisfactionLabel) {
+              fbSettings.statsSatisfactionLabel = 'Client Satisfaction';
+              needsUpdate = true;
+            }
+            if (fbSettings.statsExperience === '8+ Yrs' || !fbSettings.statsExperience) {
+              fbSettings.statsExperience = '3+ Years';
+              needsUpdate = true;
+            }
+            if (!fbSettings.statsExperienceLabel) {
+              fbSettings.statsExperienceLabel = 'Years Experience';
               needsUpdate = true;
             }
 
