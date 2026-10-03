@@ -191,16 +191,25 @@ export function PortfolioProvider({ children }) {
       const unsubProjects = onSnapshot(collection(db, 'projects'), (snapshot) => {
         if (!snapshot.empty) {
           const fbProjects = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+          // Maintain order if stored with order index
+          fbProjects.sort((a, b) => (a.orderIndex ?? 0) - (b.orderIndex ?? 0));
           setProjects(fbProjects);
           localStorage.setItem('undo_projects_inr_v6', JSON.stringify(fbProjects));
+        } else {
+          // Seed initial default projects to Firestore if empty
+          defaultProjects.forEach((proj, idx) => {
+            setDoc(doc(db, 'projects', proj.id), { ...proj, orderIndex: idx }, { merge: true }).catch(() => {});
+          });
         }
-      }, () => setFirebaseStatus('OFFLINE_CACHE'));
+      }, (err) => setFirebaseStatus('OFFLINE_CACHE'));
 
       const unsubSettings = onSnapshot(doc(db, 'settings', 'hero'), (docSnap) => {
         if (docSnap.exists()) {
           const fbSettings = docSnap.data();
           setSettings(fbSettings);
           localStorage.setItem('undo_settings_inr_v6', JSON.stringify(fbSettings));
+        } else {
+          setDoc(doc(db, 'settings', 'hero'), defaultHeroSettings, { merge: true }).catch(() => {});
         }
       }, () => {});
 
@@ -209,6 +218,10 @@ export function PortfolioProvider({ children }) {
           const fbServices = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
           setServices(fbServices);
           localStorage.setItem('undo_services_inr_v6', JSON.stringify(fbServices));
+        } else {
+          defaultServices.forEach((svc) => {
+            setDoc(doc(db, 'services', svc.id), svc, { merge: true }).catch(() => {});
+          });
         }
       }, () => {});
 
@@ -238,22 +251,32 @@ export function PortfolioProvider({ children }) {
     setSettings(newSettings);
     localStorage.setItem('undo_settings_inr_v6', JSON.stringify(newSettings));
     try {
-      await setDoc(doc(db, 'settings', 'hero'), newSettings);
+      await setDoc(doc(db, 'settings', 'hero'), newSettings, { merge: true });
     } catch (e) {
       console.warn("Firestore settings update failed:", e);
     }
   };
 
   // Projects CRUD
+  const saveProjectsOrderToFirestore = async (pList) => {
+    try {
+      for (let i = 0; i < pList.length; i++) {
+        await setDoc(doc(db, 'projects', pList[i].id), { ...pList[i], orderIndex: i }, { merge: true });
+      }
+    } catch (e) {
+      console.warn("Firestore reorder save failed:", e);
+    }
+  };
+
   const addProject = async (project) => {
     const id = 'proj-' + Date.now();
-    const newProj = { ...project, id };
+    const newProj = { ...project, id, orderIndex: projects.length };
     const updated = [newProj, ...projects];
     setProjects(updated);
     localStorage.setItem('undo_projects_inr_v6', JSON.stringify(updated));
 
     try {
-      await setDoc(doc(db, 'projects', id), newProj);
+      await setDoc(doc(db, 'projects', id), newProj, { merge: true });
     } catch (e) {
       console.warn("Firestore addProject failed:", e);
     }
@@ -265,7 +288,7 @@ export function PortfolioProvider({ children }) {
     localStorage.setItem('undo_projects_inr_v6', JSON.stringify(updated));
 
     try {
-      await updateDoc(doc(db, 'projects', id), updatedFields);
+      await setDoc(doc(db, 'projects', id), updatedFields, { merge: true });
     } catch (e) {
       console.warn("Firestore updateProject failed:", e);
     }
@@ -291,6 +314,7 @@ export function PortfolioProvider({ children }) {
     updated[index - 1] = temp;
     setProjects(updated);
     localStorage.setItem('undo_projects_inr_v6', JSON.stringify(updated));
+    saveProjectsOrderToFirestore(updated);
   };
 
   const moveProjectDown = (index) => {
@@ -301,6 +325,7 @@ export function PortfolioProvider({ children }) {
     updated[index + 1] = temp;
     setProjects(updated);
     localStorage.setItem('undo_projects_inr_v6', JSON.stringify(updated));
+    saveProjectsOrderToFirestore(updated);
   };
 
   // ESTIMATOR SERVICES CRUD
@@ -310,7 +335,7 @@ export function PortfolioProvider({ children }) {
     setEstimatorServices(updated);
     localStorage.setItem('undo_est_svc_inr_v6', JSON.stringify(updated));
     try {
-      await setDoc(doc(db, 'estimatorServices', newItem.id), newItem);
+      await setDoc(doc(db, 'estimatorServices', newItem.id), newItem, { merge: true });
     } catch (e) {}
   };
 
@@ -319,7 +344,7 @@ export function PortfolioProvider({ children }) {
     setEstimatorServices(updated);
     localStorage.setItem('undo_est_svc_inr_v6', JSON.stringify(updated));
     try {
-      await updateDoc(doc(db, 'estimatorServices', id), fields);
+      await setDoc(doc(db, 'estimatorServices', id), fields, { merge: true });
     } catch (e) {}
   };
 
@@ -339,7 +364,7 @@ export function PortfolioProvider({ children }) {
     setEstimatorScopes(updated);
     localStorage.setItem('undo_est_scp_inr_v6', JSON.stringify(updated));
     try {
-      await setDoc(doc(db, 'estimatorScopes', newItem.id), newItem);
+      await setDoc(doc(db, 'estimatorScopes', newItem.id), newItem, { merge: true });
     } catch (e) {}
   };
 
@@ -348,7 +373,7 @@ export function PortfolioProvider({ children }) {
     setEstimatorScopes(updated);
     localStorage.setItem('undo_est_scp_inr_v6', JSON.stringify(updated));
     try {
-      await updateDoc(doc(db, 'estimatorScopes', id), fields);
+      await setDoc(doc(db, 'estimatorScopes', id), fields, { merge: true });
     } catch (e) {}
   };
 
@@ -368,7 +393,7 @@ export function PortfolioProvider({ children }) {
     setEstimatorAddons(updated);
     localStorage.setItem('undo_est_adn_inr_v6', JSON.stringify(updated));
     try {
-      await setDoc(doc(db, 'estimatorAddons', newItem.id), newItem);
+      await setDoc(doc(db, 'estimatorAddons', newItem.id), newItem, { merge: true });
     } catch (e) {}
   };
 
@@ -377,7 +402,7 @@ export function PortfolioProvider({ children }) {
     setEstimatorAddons(updated);
     localStorage.setItem('undo_est_adn_inr_v6', JSON.stringify(updated));
     try {
-      await updateDoc(doc(db, 'estimatorAddons', id), fields);
+      await setDoc(doc(db, 'estimatorAddons', id), fields, { merge: true });
     } catch (e) {}
   };
 
@@ -397,7 +422,7 @@ export function PortfolioProvider({ children }) {
     setServices(updated);
     localStorage.setItem('undo_services_inr_v6', JSON.stringify(updated));
     try {
-      await setDoc(doc(db, 'services', newSvc.id), newSvc);
+      await setDoc(doc(db, 'services', newSvc.id), newSvc, { merge: true });
     } catch (e) {}
   };
 
@@ -406,7 +431,7 @@ export function PortfolioProvider({ children }) {
     setServices(updated);
     localStorage.setItem('undo_services_inr_v6', JSON.stringify(updated));
     try {
-      await updateDoc(doc(db, 'services', id), updatedFields);
+      await setDoc(doc(db, 'services', id), updatedFields, { merge: true });
     } catch (e) {}
   };
 
