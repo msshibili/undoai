@@ -11,8 +11,8 @@ const defaultHeroSettings = {
   statsProjects: '350+',
   statsSatisfaction: '99.9%',
   statsExperience: '8+ Yrs',
-  contactEmail: 'hello@undo.ai',
-  location: 'San Francisco, CA & Tokyo, JP',
+  contactEmail: 'undoaicreatives@gmail.com',
+  location: 'Virtual',
 };
 
 const defaultServices = [

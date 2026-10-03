@@ -4,7 +4,7 @@ import { Send, CheckCircle2, Mail, MapPin } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
 export default function ContactSection() {
-  const { addMessage } = usePortfolio();
+  const { settings, addMessage } = usePortfolio();
 
   const [formData, setFormData] = useState({
     name: '',
@@ -48,7 +48,7 @@ export default function ContactSection() {
                 </div>
                 <div>
                   <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Direct Email</p>
-                  <p style={{ fontSize: '0.9rem', fontWeight: 600, color: '#ffffff' }}>hello@undo.ai</p>
+                  <p style={{ fontSize: '0.9rem', fontWeight: 600, color: '#ffffff' }}>{settings?.contactEmail || 'undoaicreatives@gmail.com'}</p>
                 </div>
               </div>
 
@@ -58,7 +58,7 @@ export default function ContactSection() {
                 </div>
                 <div>
                   <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Global Headquarters</p>
-                  <p style={{ fontSize: '0.9rem', fontWeight: 600, color: '#ffffff' }}>San Francisco & Tokyo</p>
+                  <p style={{ fontSize: '0.9rem', fontWeight: 600, color: '#ffffff' }}>{settings?.location || 'Virtual'}</p>
                 </div>
               </div>
             </div>
