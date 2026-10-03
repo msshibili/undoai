@@ -259,7 +259,22 @@ export function PortfolioProvider({ children }) {
         doc(db, 'settings', 'hero'),
         (docSnap) => {
           if (docSnap.exists()) {
-            const fbSettings = docSnap.data();
+            let fbSettings = docSnap.data();
+            let needsUpdate = false;
+
+            if (fbSettings.contactEmail === 'hello@undo.ai' || !fbSettings.contactEmail) {
+              fbSettings.contactEmail = 'undoaicreatives@gmail.com';
+              needsUpdate = true;
+            }
+            if (fbSettings.location?.includes('San Francisco') || !fbSettings.location) {
+              fbSettings.location = 'Virtual';
+              needsUpdate = true;
+            }
+
+            if (needsUpdate) {
+              setDoc(doc(db, 'settings', 'hero'), fbSettings, { merge: true }).catch(() => {});
+            }
+
             setSettings(fbSettings);
             localStorage.setItem('undo_settings_inr_v6', JSON.stringify(fbSettings));
           } else {
