@@ -13,6 +13,10 @@ const defaultHeroSettings = {
   statsExperience: '8+ Yrs',
   contactEmail: 'undoaicreatives@gmail.com',
   location: 'Virtual',
+  socialBehance: 'https://www.behance.net',
+  socialLinkedin: 'https://www.linkedin.com',
+  socialInstagram: 'https://www.instagram.com',
+  socialWhatsapp: 'https://wa.me/15550192834',
 };
 
 const defaultServices = [
