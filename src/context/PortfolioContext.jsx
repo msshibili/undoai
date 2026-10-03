@@ -498,9 +498,11 @@ export function PortfolioProvider({ children }) {
     const temp = updated[index];
     updated[index] = updated[index - 1];
     updated[index - 1] = temp;
-    setProjects(updated);
-    localStorage.setItem('undo_projects_inr_v6', JSON.stringify(updated));
-    saveProjectsOrderToFirestore(updated);
+
+    const reIndexed = updated.map((proj, idx) => ({ ...proj, orderIndex: idx }));
+    setProjects(reIndexed);
+    localStorage.setItem('undo_projects_inr_v6', JSON.stringify(reIndexed));
+    saveProjectsOrderToFirestore(reIndexed);
   };
 
   const moveProjectDown = (index) => {
@@ -509,9 +511,11 @@ export function PortfolioProvider({ children }) {
     const temp = updated[index];
     updated[index] = updated[index + 1];
     updated[index + 1] = temp;
-    setProjects(updated);
-    localStorage.setItem('undo_projects_inr_v6', JSON.stringify(updated));
-    saveProjectsOrderToFirestore(updated);
+
+    const reIndexed = updated.map((proj, idx) => ({ ...proj, orderIndex: idx }));
+    setProjects(reIndexed);
+    localStorage.setItem('undo_projects_inr_v6', JSON.stringify(reIndexed));
+    saveProjectsOrderToFirestore(reIndexed);
   };
 
   // ESTIMATOR SERVICES CRUD

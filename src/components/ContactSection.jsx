@@ -75,7 +75,7 @@ export default function ContactSection() {
                   
                   {/* BEHANCE LINK */}
                   <a
-                    href={settings?.socialBehance || "https://www.behance.net"}
+                    href={settings?.socialBehance || "https://www.behance.net/shibilimp"}
                     target="_blank"
                     rel="noopener noreferrer"
                     style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.6rem 0.8rem', background: 'rgba(255,255,255,0.03)', borderRadius: '10px', border: '1px solid var(--border-light)', color: '#ffffff', textDecoration: 'none', transition: 'all 0.2s ease' }}
@@ -90,7 +90,7 @@ export default function ContactSection() {
 
                   {/* LINKEDIN LINK */}
                   <a
-                    href={settings?.socialLinkedin || "https://www.linkedin.com"}
+                    href={settings?.socialLinkedin || "https://www.linkedin.com/in/muhammed-shibili-mp"}
                     target="_blank"
                     rel="noopener noreferrer"
                     style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.6rem 0.8rem', background: 'rgba(255,255,255,0.03)', borderRadius: '10px', border: '1px solid var(--border-light)', color: '#ffffff', textDecoration: 'none', transition: 'all 0.2s ease' }}
@@ -105,7 +105,7 @@ export default function ContactSection() {
 
                   {/* INSTAGRAM LINK */}
                   <a
-                    href={settings?.socialInstagram || "https://www.instagram.com"}
+                    href={settings?.socialInstagram || "https://www.instagram.com/un.do.ai/?utm_source=ig_web_button_share_sheet"}
                     target="_blank"
                     rel="noopener noreferrer"
                     style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.6rem 0.8rem', background: 'rgba(255,255,255,0.03)', borderRadius: '10px', border: '1px solid var(--border-light)', color: '#ffffff', textDecoration: 'none', transition: 'all 0.2s ease' }}
@@ -120,7 +120,7 @@ export default function ContactSection() {
 
                   {/* WHATSAPP LINK */}
                   <a
-                    href={settings?.socialWhatsapp || "https://wa.me/15550192834"}
+                    href={settings?.socialWhatsapp || "https://wa.me/919746695430"}
                     target="_blank"
                     rel="noopener noreferrer"
                     style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.6rem 0.8rem', background: 'rgba(255,255,255,0.03)', borderRadius: '10px', border: '1px solid var(--border-light)', color: '#ffffff', textDecoration: 'none', transition: 'all 0.2s ease' }}

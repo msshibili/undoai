@@ -75,12 +75,21 @@ export function compressImageFile(file, maxWidth = 1200, maxHeight = 1200, quali
 export async function processAndUploadImage(file) {
   if (!file) return null;
 
-  // Try Firebase Storage first
+  // Try Firebase Storage with a 3.5-second timeout race
   try {
     const cleanFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
     const storageRef = ref(storage, `posters/${Date.now()}_${cleanFileName}`);
-    const snapshot = await uploadBytes(storageRef, file);
-    const downloadURL = await getDownloadURL(snapshot.ref);
+
+    const uploadPromise = (async () => {
+      const snapshot = await uploadBytes(storageRef, file);
+      return await getDownloadURL(snapshot.ref);
+    })();
+
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('Storage upload timeout')), 3500)
+    );
+
+    const downloadURL = await Promise.race([uploadPromise, timeoutPromise]);
     if (downloadURL) return downloadURL;
   } catch (err) {
     console.warn('Firebase Storage upload notice (falling back to web compression):', err);
