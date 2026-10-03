@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { usePortfolio, getDaysAndHours, formatProductionTime } from '../context/PortfolioContext';
-import { Lock, ArrowLeft, Plus, Trash2, Edit3, Save, Check, Database, Layers, Code2, Mail, Zap, Upload, ArrowUp, ArrowDown, X, Calculator } from 'lucide-react';
+import { processAndUploadImage } from '../firebase/config';
+import { Lock, ArrowLeft, Plus, Trash2, Edit3, Save, Check, Database, Layers, Code2, Mail, Zap, Upload, ArrowUp, ArrowDown, X, Calculator, Loader2 } from 'lucide-react';
 
 const categoriesList = [
   { name: 'Social Media', tag: 'social' },
@@ -112,42 +113,46 @@ export default function AdminPortal({ onClose }) {
   const [newEstScp, setNewEstScp] = useState({ name: '', multiplier: 1.5, extraDays: 1, extraHours: 0 });
   const [newEstAdn, setNewEstAdn] = useState({ name: '', price: 1500, days: 1, hours: 12 });
 
-
   const [imagePreview, setImagePreview] = useState(null);
   const [editImagePreview, setEditImagePreview] = useState(null);
+  const [isUploading, setIsUploading] = useState(false);
   const [saveSuccessMsg, setSaveSuccessMsg] = useState('');
 
-  const handleFileUpload = (e) => {
+  const handleFileUpload = async (e) => {
     const file = e.target.files[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const result = reader.result;
-        setImagePreview(result);
+      setIsUploading(true);
+      const url = await processAndUploadImage(file);
+      setIsUploading(false);
+      if (url) {
+        setImagePreview(url);
         setNewProject((prev) => ({
           ...prev,
-          thumbnail: result,
-          mainImage: result,
+          thumbnail: url,
+          mainImage: url,
         }));
-      };
-      reader.readAsDataURL(file);
+        setSaveSuccessMsg('Poster image uploaded & compressed for global sync!');
+        setTimeout(() => setSaveSuccessMsg(''), 4000);
+      }
     }
   };
 
-  const handleEditFileUpload = (e) => {
+  const handleEditFileUpload = async (e) => {
     const file = e.target.files[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const result = reader.result;
-        setEditImagePreview(result);
+      setIsUploading(true);
+      const url = await processAndUploadImage(file);
+      setIsUploading(false);
+      if (url) {
+        setEditImagePreview(url);
         setEditingProject((prev) => ({
           ...prev,
-          thumbnail: result,
-          mainImage: result,
+          thumbnail: url,
+          mainImage: url,
         }));
-      };
-      reader.readAsDataURL(file);
+        setSaveSuccessMsg('Updated poster image uploaded & compressed!');
+        setTimeout(() => setSaveSuccessMsg(''), 4000);
+      }
     }
   };
 
@@ -911,10 +916,18 @@ service cloud.firestore {
                 </div>
 
                 <div>
-                  <label style={{ fontSize: '0.75rem', color: '#06b6d4', fontWeight: 700 }}>⚡ Upload Image File (Fast)</label>
+                  <label style={{ fontSize: '0.75rem', color: '#06b6d4', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                    <span>⚡ Upload Image File (Global Sync)</span>
+                    {isUploading && (
+                      <span style={{ fontSize: '0.7rem', color: '#fbbf24', display: 'inline-flex', alignItems: 'center', gap: '0.2rem' }}>
+                        <Loader2 size={12} className="animate-spin" /> Optimizing...
+                      </span>
+                    )}
+                  </label>
                   <input
                     type="file"
                     accept="image/*"
+                    disabled={isUploading}
                     onChange={handleFileUpload}
                     className="form-input"
                     style={{ padding: '0.4rem 0.6rem', fontSize: '0.75rem' }}
