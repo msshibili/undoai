@@ -9,7 +9,7 @@ export default function ContactSection() {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
-    service: 'Web & App Engineering',
+    service: 'Social Media Poster Design',
     message: '',
   });
   const [submitted, setSubmitted] = useState(false);
@@ -20,19 +20,19 @@ export default function ContactSection() {
 
     try {
       confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 } });
-    } catch (err) {}
+    } catch (err) { }
 
     setSubmitted(true);
-    setFormData({ name: '', email: '', service: 'Web & App Engineering', message: '' });
+    setFormData({ name: '', email: '', service: 'Social Media Poster Design', message: '' });
     setTimeout(() => setSubmitted(false), 6000);
   };
 
   return (
     <section id="contact" style={{ padding: '6rem 0', background: '#06070c', borderTop: '1px solid var(--border-light)' }}>
       <div className="container">
-        
+
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '3rem', alignItems: 'start' }}>
-          
+
           {/* Info */}
           <div>
             <span className="section-tag" style={{ color: 'var(--accent-cyan)' }}>GET IN TOUCH</span>
@@ -67,7 +67,7 @@ export default function ContactSection() {
           {/* Form */}
           <div style={{ padding: '2.5rem', background: 'var(--bg-card)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-light)' }}>
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-              
+
               <div>
                 <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '0.4rem', color: 'var(--text-muted)' }}>
                   Your Name
@@ -105,10 +105,11 @@ export default function ContactSection() {
                   onChange={(e) => setFormData({ ...formData, service: e.target.value })}
                   className="form-select"
                 >
-                  <option value="Web & App Engineering">Web & App Engineering</option>
-                  <option value="3D & Motion Graphics">3D & Motion Graphics</option>
-                  <option value="Brand Identity System">Brand Identity System</option>
-                  <option value="Cinematic Media & Video">Cinematic Media & Video</option>
+                  <option value="Social Media Poster Design">Social Media Poster Design</option>
+                  <option value="Flyer & Events Poster Design">Flyer & Events Poster Design</option>
+                  <option value="Magazine Layout">Magazine Layout</option>
+                  <option value="AI Video Creation">AI Video Creation</option>
+                  <option value="Video Editing">Video Editing</option>
                 </select>
               </div>
 
