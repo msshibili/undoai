@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Sparkles, ArrowRight, Shield, Menu, X } from 'lucide-react';
+import { usePortfolio } from '../context/PortfolioContext';
 
 export default function Navbar({ onOpenAdmin }) {
+  const { settings } = usePortfolio();
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -21,12 +23,22 @@ export default function Navbar({ onOpenAdmin }) {
         
         {/* Brand Logo */}
         <a href="#" className="brand-logo" onClick={closeMobileMenu}>
-          <div className="logo-box">
-            <div className="logo-inner">⟲</div>
-          </div>
-          <span className="brand-title">
-            undo<span>.ai</span>
-          </span>
+          {settings?.logoUrl ? (
+            <img
+              src={settings.logoUrl}
+              alt="undo.ai Logo"
+              style={{ height: '38px', maxWidth: '160px', objectFit: 'contain', display: 'block' }}
+            />
+          ) : (
+            <>
+              <div className="logo-box">
+                <div className="logo-inner">⟲</div>
+              </div>
+              <span className="brand-title">
+                undo<span>.ai</span>
+              </span>
+            </>
+          )}
         </a>
 
         {/* Desktop Navigation Links */}

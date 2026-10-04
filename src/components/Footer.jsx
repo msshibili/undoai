@@ -13,10 +13,20 @@ export default function Footer({ onOpenAdmin }) {
 
           <div>
             <a href="#" className="brand-logo" style={{ marginBottom: '1rem' }}>
-              <div className="logo-box">
-                <div className="logo-inner">⟲</div>
-              </div>
-              <span className="brand-title">undo<span>.ai</span></span>
+              {settings?.logoUrl ? (
+                <img
+                  src={settings.logoUrl}
+                  alt="undo.ai Logo"
+                  style={{ height: '36px', maxWidth: '150px', objectFit: 'contain', display: 'block' }}
+                />
+              ) : (
+                <>
+                  <div className="logo-box">
+                    <div className="logo-inner">⟲</div>
+                  </div>
+                  <span className="brand-title">undo<span>.ai</span></span>
+                </>
+              )}
             </a>
             <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: 300, maxWidth: '300px' }}>
               Creative design & digital media studio. Designing visuals, stories, and digital experiences that make brands impossible to ignore.

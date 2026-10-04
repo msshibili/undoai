@@ -122,7 +122,41 @@ export default function AdminPortal({ onClose }) {
   const [imagePreview, setImagePreview] = useState(null);
   const [editImagePreview, setEditImagePreview] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false);
+  const [isUploadingCover, setIsUploadingCover] = useState(false);
   const [saveSuccessMsg, setSaveSuccessMsg] = useState('');
+
+  const handleLogoUpload = async (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setIsUploadingLogo(true);
+      const url = await processAndUploadImage(file);
+      setIsUploadingLogo(false);
+      if (url) {
+        const updated = { ...tempSettings, logoUrl: url };
+        setTempSettings(updated);
+        setSaveSuccessMsg('Logo uploaded & compressed! Syncing to Firebase...');
+        await updateSiteSettings(updated);
+        setTimeout(() => setSaveSuccessMsg(''), 4000);
+      }
+    }
+  };
+
+  const handleCoverUpload = async (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setIsUploadingCover(true);
+      const url = await processAndUploadImage(file);
+      setIsUploadingCover(false);
+      if (url) {
+        const updated = { ...tempSettings, coverPhotoUrl: url };
+        setTempSettings(updated);
+        setSaveSuccessMsg('Cover photo uploaded & compressed! Syncing to Firebase...');
+        await updateSiteSettings(updated);
+        setTimeout(() => setSaveSuccessMsg(''), 4000);
+      }
+    }
+  };
 
   const handleFileUpload = async (e) => {
     const file = e.target.files[0];
@@ -1074,9 +1108,153 @@ service cloud.firestore {
           </div>
         )}
 
-        {/* TAB 3: HERO SETTINGS */}
+        {/* TAB 3: HERO & BRAND SETTINGS */}
         {activeTab === 'settings' && (
           <form onSubmit={handleSaveSettings} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+            
+            {/* BRAND MEDIA ASSETS (LOGO & COVER PHOTO) */}
+            <div style={{ padding: '1.25rem', background: 'rgba(139, 92, 246, 0.1)', borderRadius: '16px', border: '1px solid rgba(139, 92, 246, 0.3)' }}>
+              <h4 style={{ fontSize: '1rem', fontWeight: 700, color: '#c084fc', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <Upload size={18} color="#06b6d4" />
+                <span>Studio Brand Assets & Media Upload (Synced to Firebase)</span>
+              </h4>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.5rem' }}>
+                
+                {/* 1. BRAND LOGO MANUAL UPLOAD */}
+                <div style={{ padding: '1.25rem', background: 'var(--bg-card)', borderRadius: '12px', border: '1px solid var(--border-light)', display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <label style={{ fontSize: '0.85rem', fontWeight: 700, color: '#ffffff' }}>1. Studio Brand Logo</label>
+                    {isUploadingLogo && (
+                      <span style={{ fontSize: '0.75rem', color: '#fbbf24', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+                        <Loader2 size={14} className="animate-spin" /> Uploading Logo...
+                      </span>
+                    )}
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '0.75rem', background: 'rgba(7, 8, 13, 0.8)', borderRadius: '10px', border: '1px solid var(--border-light)' }}>
+                    <div style={{ width: '80px', height: '45px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#000', borderRadius: '8px', overflow: 'hidden', padding: '4px' }}>
+                      {tempSettings.logoUrl ? (
+                        <img src={tempSettings.logoUrl} alt="Logo Preview" style={{ maxHeight: '100%', maxWidth: '100%', objectFit: 'contain' }} />
+                      ) : (
+                        <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Default Logo</span>
+                      )}
+                    </div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                      <p style={{ fontWeight: 600, color: '#ffffff' }}>{tempSettings.logoUrl ? 'Custom Image Active' : 'Using Text Brand Logo'}</p>
+                      <p>PNG, SVG, JPG, WebP supported</p>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label style={{ fontSize: '0.75rem', color: '#06b6d4', fontWeight: 600 }}>Manual Upload File from Device</label>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      disabled={isUploadingLogo}
+                      onChange={handleLogoUpload}
+                      className="form-input"
+                      style={{ padding: '0.4rem 0.6rem', fontSize: '0.75rem', marginTop: '0.25rem' }}
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600 }}>Or Image URL Direct Link</label>
+                    <input
+                      type="text"
+                      value={tempSettings.logoUrl || ''}
+                      onChange={(e) => setTempSettings({ ...tempSettings, logoUrl: e.target.value })}
+                      placeholder="https://.../logo.png"
+                      className="form-input"
+                      style={{ fontSize: '0.75rem', marginTop: '0.25rem' }}
+                    />
+                  </div>
+
+                  {tempSettings.logoUrl && (
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        const updated = { ...tempSettings, logoUrl: '' };
+                        setTempSettings(updated);
+                        await updateSiteSettings(updated);
+                        setSaveSuccessMsg('Logo reset to default brand text!');
+                        setTimeout(() => setSaveSuccessMsg(''), 4000);
+                      }}
+                      className="btn-secondary"
+                      style={{ padding: '0.35rem 0.65rem', fontSize: '0.75rem', color: '#f87171', borderColor: 'rgba(239, 68, 68, 0.4)', alignSelf: 'flex-start' }}
+                    >
+                      <Trash2 size={12} />
+                      <span>Reset Logo to Default</span>
+                    </button>
+                  )}
+                </div>
+
+                {/* 2. HERO COVER PHOTO MANUAL UPLOAD */}
+                <div style={{ padding: '1.25rem', background: 'var(--bg-card)', borderRadius: '12px', border: '1px solid var(--border-light)', display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <label style={{ fontSize: '0.85rem', fontWeight: 700, color: '#ffffff' }}>2. Hero Cover Photo / Showcase Art</label>
+                    {isUploadingCover && (
+                      <span style={{ fontSize: '0.75rem', color: '#fbbf24', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+                        <Loader2 size={14} className="animate-spin" /> Uploading Cover...
+                      </span>
+                    )}
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '0.75rem', background: 'rgba(7, 8, 13, 0.8)', borderRadius: '10px', border: '1px solid var(--border-light)' }}>
+                    <div style={{ width: '80px', height: '60px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#000', borderRadius: '8px', overflow: 'hidden' }}>
+                      <img src={tempSettings.coverPhotoUrl || '/hero-showcase.png'} alt="Cover Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    </div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                      <p style={{ fontWeight: 600, color: '#ffffff' }}>Hero Showcase Cover Image</p>
+                      <p>HD Landscape / 3D Graphics Banner</p>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label style={{ fontSize: '0.75rem', color: '#06b6d4', fontWeight: 600 }}>Manual Upload File from Device</label>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      disabled={isUploadingCover}
+                      onChange={handleCoverUpload}
+                      className="form-input"
+                      style={{ padding: '0.4rem 0.6rem', fontSize: '0.75rem', marginTop: '0.25rem' }}
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600 }}>Or Cover Image URL Direct Link</label>
+                    <input
+                      type="text"
+                      value={tempSettings.coverPhotoUrl || ''}
+                      onChange={(e) => setTempSettings({ ...tempSettings, coverPhotoUrl: e.target.value })}
+                      placeholder="/hero-showcase.png"
+                      className="form-input"
+                      style={{ fontSize: '0.75rem', marginTop: '0.25rem' }}
+                    />
+                  </div>
+
+                  {tempSettings.coverPhotoUrl && tempSettings.coverPhotoUrl !== '/hero-showcase.png' && (
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        const updated = { ...tempSettings, coverPhotoUrl: '/hero-showcase.png' };
+                        setTempSettings(updated);
+                        await updateSiteSettings(updated);
+                        setSaveSuccessMsg('Cover photo reset to default showcase image!');
+                        setTimeout(() => setSaveSuccessMsg(''), 4000);
+                      }}
+                      className="btn-secondary"
+                      style={{ padding: '0.35rem 0.65rem', fontSize: '0.75rem', color: '#f87171', borderColor: 'rgba(239, 68, 68, 0.4)', alignSelf: 'flex-start' }}
+                    >
+                      <Trash2 size={12} />
+                      <span>Reset Cover to Default</span>
+                    </button>
+                  )}
+                </div>
+
+              </div>
+            </div>
             
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.25rem' }}>
               <div>

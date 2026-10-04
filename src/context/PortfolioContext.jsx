@@ -20,6 +20,8 @@ const defaultHeroSettings = {
   socialLinkedin: 'https://www.linkedin.com',
   socialInstagram: 'https://www.instagram.com',
   socialWhatsapp: 'https://wa.me/15550192834',
+  logoUrl: '',
+  coverPhotoUrl: '/hero-showcase.png',
 };
 
 const defaultServices = [
@@ -307,6 +309,10 @@ export function PortfolioProvider({ children }) {
             }
             if (!fbSettings.statsExperienceLabel) {
               fbSettings.statsExperienceLabel = 'Years Experience';
+              needsUpdate = true;
+            }
+            if (!fbSettings.coverPhotoUrl) {
+              fbSettings.coverPhotoUrl = '/hero-showcase.png';
               needsUpdate = true;
             }
 

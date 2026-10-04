@@ -61,7 +61,7 @@ export default function Hero() {
           {/* Right Showcase Artwork */}
           <div className="showcase-card">
             <img
-              src="/hero-showcase.png"
+              src={settings.coverPhotoUrl || settings.coverPhoto || '/hero-showcase.png'}
               alt="undo.ai Studio Showcase"
               className="showcase-img"
             />
