@@ -90,9 +90,24 @@ export default function AdminPortal({ onClose }) {
     deleteCustomRequest,
     firebaseStatus,
     firebaseError,
+    forceSyncToFirebase,
   } = usePortfolio();
 
   const [tempSettings, setTempSettings] = useState({ ...settings });
+  const [isSyncing, setIsSyncing] = useState(false);
+
+  const handleManualSync = async () => {
+    setIsSyncing(true);
+    setSaveSuccessMsg('Pushing all current local data & projects to Firebase...');
+    const res = await forceSyncToFirebase();
+    setIsSyncing(false);
+    if (res.failCount === 0) {
+      setSaveSuccessMsg(`Successfully synced ${res.successCount} items live to Firebase database!`);
+    } else {
+      setSaveSuccessMsg(`Synced ${res.successCount} items to Firebase (${res.failCount} failed - check security rules).`);
+    }
+    setTimeout(() => setSaveSuccessMsg(''), 5000);
+  };
 
   useEffect(() => {
     if (settings) {
@@ -404,9 +419,20 @@ export default function AdminPortal({ onClose }) {
             </div>
             <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Full control over Estimator pricing (₹ INR), project order, services & site content</p>
           </div>
-          <button onClick={onClose} className="btn-secondary" style={{ padding: '0.4rem 0.85rem', fontSize: '0.75rem' }}>
-            Close Console
-          </button>
+          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+            <button
+              onClick={handleManualSync}
+              disabled={isSyncing}
+              className="btn-primary"
+              style={{ padding: '0.4rem 0.85rem', fontSize: '0.75rem', gap: '0.35rem' }}
+            >
+              {isSyncing ? <Loader2 size={14} className="animate-spin" /> : <Database size={14} />}
+              <span>{isSyncing ? 'Syncing...' : 'Push All Data to Firebase'}</span>
+            </button>
+            <button onClick={onClose} className="btn-secondary" style={{ padding: '0.4rem 0.85rem', fontSize: '0.75rem' }}>
+              Close Console
+            </button>
+          </div>
         </div>
 
         {firebaseStatus === 'PERMISSION_DENIED' && (

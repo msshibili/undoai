@@ -191,13 +191,44 @@ const defaultProjects = [
 
 const PortfolioContext = createContext();
 
+function getInitialLocalData(key, defaultVal) {
+  try {
+    const item = localStorage.getItem(key);
+    if (!item) return defaultVal;
+    const parsed = JSON.parse(item);
+    if (Array.isArray(parsed) && parsed.length === 0) {
+      return defaultVal;
+    }
+    return parsed;
+  } catch (err) {
+    return defaultVal;
+  }
+}
+
+const seedCollectionIfEmpty = async (colName, items, isDoc = false) => {
+  try {
+    if (isDoc) {
+      await setDoc(doc(db, 'settings', 'hero'), items, { merge: true });
+    } else {
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        const docId = item.id || `${colName}-${i}`;
+        const dataToSave = item.orderIndex !== undefined ? item : { ...item, orderIndex: i };
+        await setDoc(doc(db, colName, docId), dataToSave, { merge: true });
+      }
+    }
+  } catch (err) {
+    console.warn(`Firestore auto-seed notice for ${colName}:`, err.message);
+  }
+};
+
 export function PortfolioProvider({ children }) {
-  const [settings, setSettings] = useState(defaultHeroSettings);
-  const [services, setServices] = useState(defaultServices);
-  const [projects, setProjects] = useState(defaultProjects);
-  const [estimatorServices, setEstimatorServices] = useState(defaultEstimatorServices);
-  const [estimatorScopes, setEstimatorScopes] = useState(defaultEstimatorScopes);
-  const [estimatorAddons, setEstimatorAddons] = useState(defaultEstimatorAddons);
+  const [settings, setSettings] = useState(() => getInitialLocalData('undo_settings_inr_v6', defaultHeroSettings));
+  const [services, setServices] = useState(() => getInitialLocalData('undo_services_inr_v6', defaultServices));
+  const [projects, setProjects] = useState(() => getInitialLocalData('undo_projects_inr_v6', defaultProjects));
+  const [estimatorServices, setEstimatorServices] = useState(() => getInitialLocalData('undo_est_svc_inr_v6', defaultEstimatorServices));
+  const [estimatorScopes, setEstimatorScopes] = useState(() => getInitialLocalData('undo_est_scp_inr_v6', defaultEstimatorScopes));
+  const [estimatorAddons, setEstimatorAddons] = useState(() => getInitialLocalData('undo_est_adn_inr_v6', defaultEstimatorAddons));
 
   const [messages, setMessages] = useState([]);
   const [customRequests, setCustomRequests] = useState([]);
@@ -206,33 +237,6 @@ export function PortfolioProvider({ children }) {
   const [firebaseError, setFirebaseError] = useState(null);
 
   useEffect(() => {
-    // Load local storage initial caches
-    const savedSettings = localStorage.getItem('undo_settings_inr_v6');
-    if (savedSettings) {
-      const parsed = JSON.parse(savedSettings);
-      if (parsed.statsProjects === '350+') parsed.statsProjects = '100+';
-      if (parsed.statsExperience === '8+ Yrs') parsed.statsExperience = '3+ Years';
-      if (!parsed.statsProjectsLabel) parsed.statsProjectsLabel = 'Completed Works';
-      if (!parsed.statsSatisfactionLabel) parsed.statsSatisfactionLabel = 'Client Satisfaction';
-      if (!parsed.statsExperienceLabel) parsed.statsExperienceLabel = 'Years Experience';
-      setSettings(parsed);
-    }
-
-    const savedProjects = localStorage.getItem('undo_projects_inr_v6');
-    if (savedProjects) setProjects(JSON.parse(savedProjects));
-
-    const savedServices = localStorage.getItem('undo_services_inr_v6');
-    if (savedServices) setServices(JSON.parse(savedServices));
-
-    const savedEstSvc = localStorage.getItem('undo_est_svc_inr_v6');
-    if (savedEstSvc) setEstimatorServices(JSON.parse(savedEstSvc));
-
-    const savedEstScp = localStorage.getItem('undo_est_scp_inr_v6');
-    if (savedEstScp) setEstimatorScopes(JSON.parse(savedEstScp));
-
-    const savedEstAdn = localStorage.getItem('undo_est_adn_inr_v6');
-    if (savedEstAdn) setEstimatorAddons(JSON.parse(savedEstAdn));
-
     const handleFirestoreError = (err, contextName) => {
       console.error(`Firestore [${contextName}] Error:`, err);
       if (err.code === 'permission-denied') {
@@ -255,15 +259,10 @@ export function PortfolioProvider({ children }) {
             setProjects(fbProjects);
             localStorage.setItem('undo_projects_inr_v6', JSON.stringify(fbProjects));
           } else {
-            const hasSeeded = localStorage.getItem('undo_seeded_projects_v2');
-            if (!hasSeeded) {
-              localStorage.setItem('undo_seeded_projects_v2', 'true');
-              defaultProjects.forEach((proj, idx) => {
-                setDoc(doc(db, 'projects', proj.id), { ...proj, orderIndex: idx }, { merge: true }).catch(() => {});
-              });
-            } else {
-              setProjects([]);
-              localStorage.setItem('undo_projects_inr_v6', JSON.stringify([]));
+            const currentData = getInitialLocalData('undo_projects_inr_v6', defaultProjects);
+            if (currentData && currentData.length > 0) {
+              setProjects(currentData);
+              seedCollectionIfEmpty('projects', currentData);
             }
           }
           setFirebaseStatus('CONNECTED');
@@ -323,7 +322,9 @@ export function PortfolioProvider({ children }) {
             setSettings(fbSettings);
             localStorage.setItem('undo_settings_inr_v6', JSON.stringify(fbSettings));
           } else {
-            setDoc(doc(db, 'settings', 'hero'), defaultHeroSettings, { merge: true }).catch(() => {});
+            const currentSettings = getInitialLocalData('undo_settings_inr_v6', defaultHeroSettings);
+            setSettings(currentSettings);
+            setDoc(doc(db, 'settings', 'hero'), currentSettings, { merge: true }).catch(() => {});
           }
           setFirebaseStatus('CONNECTED');
           setFirebaseError(null);
@@ -339,15 +340,10 @@ export function PortfolioProvider({ children }) {
             setServices(fbServices);
             localStorage.setItem('undo_services_inr_v6', JSON.stringify(fbServices));
           } else {
-            const hasSeeded = localStorage.getItem('undo_seeded_services_v2');
-            if (!hasSeeded) {
-              localStorage.setItem('undo_seeded_services_v2', 'true');
-              defaultServices.forEach((svc) => {
-                setDoc(doc(db, 'services', svc.id), svc, { merge: true }).catch(() => {});
-              });
-            } else {
-              setServices([]);
-              localStorage.setItem('undo_services_inr_v6', JSON.stringify([]));
+            const currentServices = getInitialLocalData('undo_services_inr_v6', defaultServices);
+            if (currentServices && currentServices.length > 0) {
+              setServices(currentServices);
+              seedCollectionIfEmpty('services', currentServices);
             }
           }
         },
@@ -362,15 +358,10 @@ export function PortfolioProvider({ children }) {
             setEstimatorServices(fbEstSvc);
             localStorage.setItem('undo_est_svc_inr_v6', JSON.stringify(fbEstSvc));
           } else {
-            const hasSeeded = localStorage.getItem('undo_seeded_est_svc_v2');
-            if (!hasSeeded) {
-              localStorage.setItem('undo_seeded_est_svc_v2', 'true');
-              defaultEstimatorServices.forEach((svc) => {
-                setDoc(doc(db, 'estimatorServices', svc.id), svc, { merge: true }).catch(() => {});
-              });
-            } else {
-              setEstimatorServices([]);
-              localStorage.setItem('undo_est_svc_inr_v6', JSON.stringify([]));
+            const currentEstSvc = getInitialLocalData('undo_est_svc_inr_v6', defaultEstimatorServices);
+            if (currentEstSvc && currentEstSvc.length > 0) {
+              setEstimatorServices(currentEstSvc);
+              seedCollectionIfEmpty('estimatorServices', currentEstSvc);
             }
           }
         },
@@ -385,15 +376,10 @@ export function PortfolioProvider({ children }) {
             setEstimatorScopes(fbEstScp);
             localStorage.setItem('undo_est_scp_inr_v6', JSON.stringify(fbEstScp));
           } else {
-            const hasSeeded = localStorage.getItem('undo_seeded_est_scp_v2');
-            if (!hasSeeded) {
-              localStorage.setItem('undo_seeded_est_scp_v2', 'true');
-              defaultEstimatorScopes.forEach((scp) => {
-                setDoc(doc(db, 'estimatorScopes', scp.id), scp, { merge: true }).catch(() => {});
-              });
-            } else {
-              setEstimatorScopes([]);
-              localStorage.setItem('undo_est_scp_inr_v6', JSON.stringify([]));
+            const currentEstScp = getInitialLocalData('undo_est_scp_inr_v6', defaultEstimatorScopes);
+            if (currentEstScp && currentEstScp.length > 0) {
+              setEstimatorScopes(currentEstScp);
+              seedCollectionIfEmpty('estimatorScopes', currentEstScp);
             }
           }
         },
@@ -408,15 +394,10 @@ export function PortfolioProvider({ children }) {
             setEstimatorAddons(fbEstAdn);
             localStorage.setItem('undo_est_adn_inr_v6', JSON.stringify(fbEstAdn));
           } else {
-            const hasSeeded = localStorage.getItem('undo_seeded_est_adn_v2');
-            if (!hasSeeded) {
-              localStorage.setItem('undo_seeded_est_adn_v2', 'true');
-              defaultEstimatorAddons.forEach((adn) => {
-                setDoc(doc(db, 'estimatorAddons', adn.id), adn, { merge: true }).catch(() => {});
-              });
-            } else {
-              setEstimatorAddons([]);
-              localStorage.setItem('undo_est_adn_inr_v6', JSON.stringify([]));
+            const currentEstAdn = getInitialLocalData('undo_est_adn_inr_v6', defaultEstimatorAddons);
+            if (currentEstAdn && currentEstAdn.length > 0) {
+              setEstimatorAddons(currentEstAdn);
+              seedCollectionIfEmpty('estimatorAddons', currentEstAdn);
             }
           }
         },
@@ -758,6 +739,66 @@ export function PortfolioProvider({ children }) {
     }
   };
 
+  const forceSyncToFirebase = async () => {
+    let successCount = 0;
+    let failCount = 0;
+
+    try {
+      await setDoc(doc(db, 'settings', 'hero'), settings, { merge: true });
+      successCount++;
+    } catch (e) {
+      failCount++;
+      console.error('Failed to sync settings:', e);
+    }
+
+    for (let i = 0; i < projects.length; i++) {
+      try {
+        await setDoc(doc(db, 'projects', projects[i].id), { ...projects[i], orderIndex: i }, { merge: true });
+        successCount++;
+      } catch (e) {
+        failCount++;
+      }
+    }
+
+    for (let i = 0; i < services.length; i++) {
+      try {
+        await setDoc(doc(db, 'services', services[i].id), services[i], { merge: true });
+        successCount++;
+      } catch (e) {
+        failCount++;
+      }
+    }
+
+    for (let i = 0; i < estimatorServices.length; i++) {
+      try {
+        await setDoc(doc(db, 'estimatorServices', estimatorServices[i].id), estimatorServices[i], { merge: true });
+        successCount++;
+      } catch (e) {
+        failCount++;
+      }
+    }
+
+    for (let i = 0; i < estimatorScopes.length; i++) {
+      try {
+        await setDoc(doc(db, 'estimatorScopes', estimatorScopes[i].id), estimatorScopes[i], { merge: true });
+        successCount++;
+      } catch (e) {
+        failCount++;
+      }
+    }
+
+    for (let i = 0; i < estimatorAddons.length; i++) {
+      try {
+        await setDoc(doc(db, 'estimatorAddons', estimatorAddons[i].id), estimatorAddons[i], { merge: true });
+        successCount++;
+      } catch (e) {
+        failCount++;
+      }
+    }
+
+    return { successCount, failCount };
+  };
+
   return (
     <PortfolioContext.Provider
       value={{
@@ -795,6 +836,7 @@ export function PortfolioProvider({ children }) {
         setActiveModalProject,
         firebaseStatus,
         firebaseError,
+        forceSyncToFirebase,
       }}
     >
       {children}
